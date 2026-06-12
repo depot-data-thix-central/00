@@ -35,9 +35,9 @@ class NewsService {
       // Filtrer en Dart
       List<dynamic> results = response;
       
-      // ✅ CORRIGÉ: Filtrer sur 'status' (pas 'is_published')
+      // ✅ CORRIGÉ: Filtrer sur 'is_published' (boolean) au lieu de 'status'
       if (onlyPublished) {
-        results = results.where((e) => e['status'] == 'published').toList();
+        results = results.where((e) => e['is_published'] == true).toList();
         debugPrint('📰 getArticles: ${results.length} articles publiés');
       }
       
@@ -77,14 +77,14 @@ class NewsService {
     }
   }
 
-  // ✅ NOUVELLE MÉTHODE: Récupérer l'article à la une
+  // ✅ CORRIGÉ: Récupérer l'article à la une
   Future<NewsArticle?> getFeaturedArticle() async {
     try {
       final response = await _supabase
           .from('news_articles')
           .select('*')
           .eq('is_featured', true)
-          .eq('status', 'published')
+          .eq('is_published', true)  // ← CORRIGÉ
           .order('published_at', ascending: false)
           .limit(1)
           .maybeSingle();
@@ -105,13 +105,13 @@ class NewsService {
     }
   }
 
-  // ✅ NOUVELLE MÉTHODE: Récupérer les articles récents
+  // ✅ CORRIGÉ: Récupérer les articles récents
   Future<List<NewsArticle>> getRecentArticles({int limit = 10}) async {
     try {
       final response = await _supabase
           .from('news_articles')
           .select('*')
-          .eq('status', 'published')
+          .eq('is_published', true)  // ← CORRIGÉ
           .order('published_at', ascending: false)
           .limit(limit);
       
@@ -162,13 +162,14 @@ class NewsService {
     }
   }
 
+  // ✅ CORRIGÉ: Breaking news
   Future<List<NewsArticle>> getBreakingNews() async {
     try {
       final response = await _supabase
           .from('news_articles')
           .select('*')
           .eq('is_breaking', true)
-          .eq('status', 'published')
+          .eq('is_published', true)  // ← CORRIGÉ
           .order('published_at', ascending: false)
           .limit(20);
       
@@ -183,12 +184,13 @@ class NewsService {
     }
   }
 
+  // ✅ CORRIGÉ: Vidéos
   Future<List<NewsArticle>> getVideos() async {
     try {
       final response = await _supabase
           .from('news_articles')
           .select('*')
-          .eq('status', 'published')
+          .eq('is_published', true)  // ← CORRIGÉ
           .not('video_url', 'is', null)
           .order('published_at', ascending: false)
           .limit(20);
@@ -204,12 +206,13 @@ class NewsService {
     }
   }
 
+  // ✅ CORRIGÉ: Recherche
   Future<List<NewsArticle>> searchArticles(String query) async {
     try {
       final response = await _supabase
           .from('news_articles')
           .select('*')
-          .eq('status', 'published')
+          .eq('is_published', true)  // ← CORRIGÉ
           .or('title.ilike.%$query%,content.ilike.%$query%,summary.ilike.%$query%')
           .order('published_at', ascending: false)
           .limit(50);
@@ -358,6 +361,7 @@ class NewsService {
   // ADMIN - CRUD
   // ============================================================
 
+  // ✅ CORRIGÉ: createArticle avec is_published
   Future<NewsArticle> createArticle({
     required String title,
     String? summary,
@@ -389,7 +393,7 @@ class NewsService {
       'video_url': videoUrl,
       'is_featured': isFeatured,
       'is_breaking': isBreaking,
-      'status': 'published',
+      'is_published': true,  // ← CORRIGÉ: is_published au lieu de status
       'published_at': publishDate,
       'created_at': now,
       'updated_at': now,
@@ -479,6 +483,19 @@ class NewsService {
     } catch (e) {
       debugPrint('❌ Connection check failed: $e');
       return false;
+    }
+  }
+
+  // ✅ NOUVELLE MÉTHODE: Mettre à jour le statut de publication
+  Future<void> setPublishStatus(String articleId, bool isPublished) async {
+    try {
+      await _supabase
+          .from('news_articles')
+          .update({'is_published': isPublished})
+          .eq('id', articleId);
+      debugPrint('📢 Article $articleId publié: $isPublished');
+    } catch (e) {
+      debugPrint('❌ Error setPublishStatus: $e');
     }
   }
 }
