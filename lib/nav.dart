@@ -37,15 +37,12 @@ import 'presentation/thix_reservation/pages/favoris.dart';
 import 'presentation/thix_reservation/pages/profil.dart';
 
 // ==================== THIX INFO ====================
-// Pages utilisateur
 import 'package:thix_id/presentation/thix_info/thix_info_home.dart';
 import 'package:thix_id/presentation/thix_info/article_detail_page.dart';
 import 'package:thix_id/presentation/thix_info/search_page.dart';
 import 'package:thix_id/presentation/thix_info/category_articles_page.dart';
 import 'package:thix_id/presentation/thix_info/saved_articles_page.dart';
 import 'package:thix_id/presentation/thix_info/breaking_news_page.dart';
-
-// Pages admin (dashboard + wrapper + création)
 import 'package:thix_id/presentation/admin/pages/admin_news_dashboard.dart';
 import 'package:thix_id/presentation/admin/pages/admin_news_page.dart';
 import 'package:thix_id/presentation/admin/pages/create_news_page.dart';
@@ -65,6 +62,39 @@ import 'package:thix_id/presentation/enterprise/enterprise_dashboard_shell_page.
 import 'presentation/chat/thix_chat_page.dart';
 import 'presentation/vault/document_vault_page.dart';
 import 'presentation/settings/settings_page.dart';
+
+// ==================== THIX CHAT - PAGES PRINCIPALES ====================
+import 'package:thix_id/presentation/chat/chat_conversation_page.dart';
+import 'package:thix_id/presentation/chat/chat_status_page.dart';
+import 'package:thix_id/presentation/chat/chat_status_update.dart';
+import 'package:thix_id/presentation/chat/chat_spaces_page.dart';
+import 'package:thix_id/presentation/chat/chat_call_page.dart';
+import 'package:thix_id/presentation/chat/chat_incoming_call.dart';
+
+// ==================== THIX CHAT - FONCTIONNALITÉS ====================
+// Éphémères
+import 'package:thix_id/presentation/chat/ephemeral/ephemeral_settings_page.dart';
+// Traduction
+import 'package:thix_id/presentation/chat/translation/auto_translate_settings.dart';
+// Thèmes
+import 'package:thix_id/presentation/chat/themes/theme_selector_sheet.dart';
+import 'package:thix_id/presentation/chat/themes/bubble_customizer.dart';
+import 'package:thix_id/presentation/chat/themes/notification_sounds_settings.dart';
+import 'package:thix_id/presentation/chat/themes/chat_wallpaper_picker.dart';
+import 'package:thix_id/presentation/chat/themes/font_size_selector.dart';
+import 'package:thix_id/presentation/chat/themes/theme_preview.dart';
+// Statut en ligne
+import 'package:thix_id/presentation/chat/online_status/last_seen_settings.dart';
+import 'package:thix_id/presentation/chat/online_status/availability_schedule.dart';
+import 'package:thix_id/presentation/chat/online_status/status_presets.dart';
+// Archives
+import 'package:thix_id/presentation/chat/archive/archive_page.dart';
+import 'package:thix_id/presentation/chat/archive/export_chat_page.dart';
+// Économiseur de données
+import 'package:thix_id/presentation/chat/data_saver/low_data_mode_toggle.dart';
+// Widgets maison
+import 'package:thix_id/presentation/chat/home_widgets/chat_widget_config.dart';
+import 'package:thix_id/presentation/chat/home_widgets/widget_preview.dart';
 
 // ==================== RÉSEAU PRO ====================
 import 'presentation/network/network_pro_home.dart';
@@ -193,6 +223,30 @@ class AppRoutes {
   static const String vault = '/vault';
   static const String settings = '/settings';
   
+  // ==================== THIX CHAT ====================
+  static const String chatConversation = '/chat/conversation/:id';
+  static const String chatStatus = '/chat/status';
+  static const String chatStatusUpdate = '/chat/status/update';
+  static const String chatSpaces = '/chat/spaces';
+  static const String chatCall = '/chat/call';
+  static const String chatIncomingCall = '/chat/incoming';
+  static const String ephemeralSettings = '/chat/ephemeral/settings';
+  static const String translationSettings = '/chat/translation/settings';
+  static const String chatThemes = '/chat/themes';
+  static const String bubbleCustomizer = '/chat/bubble/customize';
+  static const String notificationSounds = '/chat/notification/sounds';
+  static const String chatWallpaper = '/chat/wallpaper';
+  static const String fontSize = '/chat/font/size';
+  static const String themePreview = '/chat/theme/preview';
+  static const String statusSettings = '/chat/status/settings';
+  static const String availabilitySchedule = '/chat/availability/schedule';
+  static const String statusPresets = '/chat/status/presets';
+  static const String chatArchive = '/chat/archive';
+  static const String exportChat = '/chat/export/:id';
+  static const String dataSaver = '/chat/data/saver';
+  static const String widgetsConfig = '/chat/widgets/config';
+  static const String widgetsPreview = '/chat/widgets/preview';
+  
   // ==================== RÉSEAU PRO ====================
   static const String networkPro = '/network-pro';
   static const String networkProfile = '/network/profile/:userId';
@@ -288,27 +342,28 @@ class AppRoutes {
   static const String reservationMesReservations = '/reservation/mes-reservations';
   static const String reservationFavoris = '/reservation/favoris';
   static const String reservationProfil = '/reservation/profil';
+  
   // ==================== THIX ÉVÉNEMENT ====================
-static const String thixEvent = '/thix-event';
-static const String thixEventDetail = '/thix-event/event/:eventId';
-static const String thixEventSearch = '/thix-event/search';
-static const String thixEventCategory = '/thix-event/category/:category';
-static const String thixEventReservation = '/thix-event/reservation/:eventId';
-static const String thixEventMyTickets = '/thix-event/my-tickets';
-static const String thixEventFavorites = '/thix-event/favorites';
-static const String thixEventSeatSelection = '/thix-event/seat-selection/:eventId';
-static const String thixEventWaitingQueue = '/thix-event/waiting-queue/:eventId';
+  static const String thixEvent = '/thix-event';
+  static const String thixEventDetail = '/thix-event/event/:eventId';
+  static const String thixEventSearch = '/thix-event/search';
+  static const String thixEventCategory = '/thix-event/category/:category';
+  static const String thixEventReservation = '/thix-event/reservation/:eventId';
+  static const String thixEventMyTickets = '/thix-event/my-tickets';
+  static const String thixEventFavorites = '/thix-event/favorites';
+  static const String thixEventSeatSelection = '/thix-event/seat-selection/:eventId';
+  static const String thixEventWaitingQueue = '/thix-event/waiting-queue/:eventId';
   
   // ==================== THIX INFO ====================
-static const String thixInfo = '/thix-info';
-static const String thixInfoArticle = '/thix-info/article/:articleId';
-static const String thixInfoSearch = '/thix-info/search';
-static const String thixInfoCategory = '/thix-info/category/:category';
-static const String thixInfoSaved = '/thix-info/saved';
-static const String thixInfoBreaking = '/thix-info/breaking';
-static const String thixInfoAdmin = '/thix-info/admin';
-static const String thixInfoCreate = '/thix-info/admin/create';
-static const String thixInfoEdit = '/thix-info/admin/edit/:articleId';
+  static const String thixInfo = '/thix-info';
+  static const String thixInfoArticle = '/thix-info/article/:articleId';
+  static const String thixInfoSearch = '/thix-info/search';
+  static const String thixInfoCategory = '/thix-info/category/:category';
+  static const String thixInfoSaved = '/thix-info/saved';
+  static const String thixInfoBreaking = '/thix-info/breaking';
+  static const String thixInfoAdmin = '/thix-info/admin';
+  static const String thixInfoCreate = '/thix-info/admin/create';
+  static const String thixInfoEdit = '/thix-info/admin/edit/:articleId';
   
   // ==================== AUTRES SERVICES ====================
   static const String jobs = '/jobs';
@@ -328,9 +383,11 @@ static const String thixInfoEdit = '/thix-info/admin/edit/:articleId';
   static const String thixMarketOrders = '/market/orders';
   static const String thixMedia = '/thix-media';
   static const String adminMedia = '/admin/media';
-// ==================== MESSAGES & PROFIL PRINCIPAUX ====================
-static const String messages = '/messages';      // Messages THIX ID principal
-static const String profile = '/profile';        // Profil THIX ID principal
+  
+  // ==================== MESSAGES & PROFIL PRINCIPAUX ====================
+  static const String messages = '/messages';
+  static const String profile = '/profile';
+  
   static String enterprisePortalBase(String slug) => '$enterprisePortalBasePath/$slug';
   static String enterprisePortalDashboard(String slug, String section) => '/company/$slug/dashboard/$section';
 }
@@ -352,18 +409,17 @@ class AppRouter {
         final isEnterprisePortal = location.startsWith('${AppRoutes.enterprisePortalBasePath}/') ||
             location == AppRoutes.enterprisePortalBasePath;
         final isPublic = location == AppRoutes.home ||
-    location == AppRoutes.publicProfile ||
-    location == AppRoutes.jobs ||
-    location == AppRoutes.opportunities ||
-    
-    location == AppRoutes.education ||
-    location == AppRoutes.trainingHome ||
-    location.startsWith('/training/') ||
-    location.startsWith('/sante/') ||
-    location.startsWith('/reservation') ||
-    location.startsWith('/thix-info/') ||
-    location.startsWith('/thix-event/') ||  // ← AJOUTER CETTE LIGNE
-    location.startsWith('/hashtag/');
+            location == AppRoutes.publicProfile ||
+            location == AppRoutes.jobs ||
+            location == AppRoutes.opportunities ||
+            location == AppRoutes.education ||
+            location == AppRoutes.trainingHome ||
+            location.startsWith('/training/') ||
+            location.startsWith('/sante/') ||
+            location.startsWith('/reservation') ||
+            location.startsWith('/thix-info/') ||
+            location.startsWith('/thix-event/') ||
+            location.startsWith('/hashtag/');
 
         final isProtected = !isPublic && !isAuthPage;
         if (!isLoggedIn && isProtected) return AppRoutes.login;
@@ -512,10 +568,199 @@ class AppRouter {
             ),
           ],
         ),
+        
+        // ==================== THIX CHAT - PRINCIPAL ====================
         GoRoute(
           path: AppRoutes.chat,
           name: 'chat',
-          pageBuilder: (context, state) => NoTransitionPage(child: ThixChatPage()),
+          pageBuilder: (context, state) => NoTransitionPage(child: const ThixChatPage()),
+        ),
+        
+        // ==================== THIX CHAT - CONVERSATION ====================
+        GoRoute(
+          path: AppRoutes.chatConversation,
+          name: 'chatConversation',
+          pageBuilder: (context, state) {
+            final conversationId = state.pathParameters['id']!;
+            final conversation = state.extra as Conversation?;
+            return NoTransitionPage(
+              child: ChatConversationPage(
+                conversationId: conversationId,
+                conversation: conversation,
+              ),
+            );
+          },
+        ),
+        
+        // ==================== THIX CHAT - STATUT ====================
+        GoRoute(
+          path: AppRoutes.chatStatus,
+          name: 'chatStatus',
+          pageBuilder: (context, state) => NoTransitionPage(child: const ChatStatusPage()),
+        ),
+        GoRoute(
+          path: AppRoutes.chatStatusUpdate,
+          name: 'chatStatusUpdate',
+          pageBuilder: (context, state) => NoTransitionPage(child: const ChatStatusUpdatePage()),
+        ),
+        
+        // ==================== THIX CHAT - SPACES ====================
+        GoRoute(
+          path: AppRoutes.chatSpaces,
+          name: 'chatSpaces',
+          pageBuilder: (context, state) => NoTransitionPage(child: const ChatSpacesPage()),
+        ),
+        
+        // ==================== THIX CHAT - APPELS ====================
+        GoRoute(
+          path: AppRoutes.chatCall,
+          name: 'chatCall',
+          pageBuilder: (context, state) {
+            final extra = state.extra as Map?;
+            return NoTransitionPage(
+              child: ChatCallPage(
+                callId: extra?['callId'] ?? '',
+                callName: extra?['callName'] ?? 'Appel',
+                participants: extra?['participants'] ?? [],
+                isVideoCall: extra?['isVideoCall'] ?? false,
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.chatIncomingCall,
+          name: 'chatIncomingCall',
+          pageBuilder: (context, state) {
+            final extra = state.extra as Map?;
+            return NoTransitionPage(
+              child: ChatIncomingCall(
+                callerName: extra?['callerName'] ?? 'Appel entrant',
+                callType: extra?['callType'] ?? 'audio',
+              ),
+            );
+          },
+        ),
+        
+        // ==================== THIX CHAT - ÉPHÉMÈRES ====================
+        GoRoute(
+          path: AppRoutes.ephemeralSettings,
+          name: 'ephemeralSettings',
+          pageBuilder: (context, state) => NoTransitionPage(child: const EphemeralSettingsPage()),
+        ),
+        
+        // ==================== THIX CHAT - TRADUCTION ====================
+        GoRoute(
+          path: AppRoutes.translationSettings,
+          name: 'translationSettings',
+          pageBuilder: (context, state) => NoTransitionPage(child: const AutoTranslateSettings()),
+        ),
+        
+        // ==================== THIX CHAT - THÈMES ====================
+        GoRoute(
+          path: AppRoutes.chatThemes,
+          name: 'chatThemes',
+          pageBuilder: (context, state) => NoTransitionPage(child: const ThemeSelectorSheet()),
+        ),
+        GoRoute(
+          path: AppRoutes.bubbleCustomizer,
+          name: 'bubbleCustomizer',
+          pageBuilder: (context, state) => NoTransitionPage(child: const BubbleCustomizer()),
+        ),
+        GoRoute(
+          path: AppRoutes.notificationSounds,
+          name: 'notificationSounds',
+          pageBuilder: (context, state) => NoTransitionPage(child: const NotificationSoundsSettings()),
+        ),
+        GoRoute(
+          path: AppRoutes.chatWallpaper,
+          name: 'chatWallpaper',
+          pageBuilder: (context, state) => NoTransitionPage(child: const ChatWallpaperPicker()),
+        ),
+        GoRoute(
+          path: AppRoutes.fontSize,
+          name: 'fontSize',
+          pageBuilder: (context, state) => NoTransitionPage(child: const FontSizeSelector()),
+        ),
+        GoRoute(
+          path: AppRoutes.themePreview,
+          name: 'themePreview',
+          pageBuilder: (context, state) => NoTransitionPage(child: const ThemePreview()),
+        ),
+        
+        // ==================== THIX CHAT - STATUT EN LIGNE ====================
+        GoRoute(
+          path: AppRoutes.statusSettings,
+          name: 'statusSettings',
+          pageBuilder: (context, state) => NoTransitionPage(child: const LastSeenSettings()),
+        ),
+        GoRoute(
+          path: AppRoutes.availabilitySchedule,
+          name: 'availabilitySchedule',
+          pageBuilder: (context, state) => NoTransitionPage(child: const AvailabilitySchedule()),
+        ),
+        GoRoute(
+          path: AppRoutes.statusPresets,
+          name: 'statusPresets',
+          pageBuilder: (context, state) => NoTransitionPage(child: const StatusPresets()),
+        ),
+        
+        // ==================== THIX CHAT - ARCHIVES ====================
+        GoRoute(
+          path: AppRoutes.chatArchive,
+          name: 'chatArchive',
+          pageBuilder: (context, state) => NoTransitionPage(child: const ArchivePage()),
+        ),
+        GoRoute(
+          path: AppRoutes.exportChat,
+          name: 'exportChat',
+          pageBuilder: (context, state) {
+            final conversationId = state.pathParameters['id']!;
+            final conversationName = state.uri.queryParameters['name'] ?? 'Conversation';
+            return NoTransitionPage(
+              child: ExportChatPage(
+                conversationId: conversationId,
+                conversationName: conversationName,
+              ),
+            );
+          },
+        ),
+        
+        // ==================== THIX CHAT - ÉCONOMISEUR ====================
+        GoRoute(
+          path: AppRoutes.dataSaver,
+          name: 'dataSaver',
+          pageBuilder: (context, state) => NoTransitionPage(child: const LowDataModeToggle()),
+        ),
+        
+        // ==================== THIX CHAT - WIDGETS MAISON ====================
+        GoRoute(
+          path: AppRoutes.widgetsConfig,
+          name: 'widgetsConfig',
+          pageBuilder: (context, state) => NoTransitionPage(child: const ChatWidgetConfig()),
+        ),
+        GoRoute(
+          path: AppRoutes.widgetsPreview,
+          name: 'widgetsPreview',
+          pageBuilder: (context, state) => NoTransitionPage(child: const WidgetPreview()),
+        ),
+        
+        // ==================== MESSAGES & PROFIL PRINCIPAUX ====================
+        GoRoute(
+          path: AppRoutes.messages,
+          name: 'messages',
+          pageBuilder: (context, state) => NoTransitionPage(child: const ThixChatPage()),
+        ),
+        GoRoute(
+          path: AppRoutes.profile,
+          name: 'profile',
+          pageBuilder: (context, state) => NoTransitionPage(child: UserDashboardPage()),
+        ),
+        
+        // ==================== AUTRES ROUTES EXISTANTES ====================
+        GoRoute(
+          path: AppRoutes.chat,
+          name: 'chat',
+          pageBuilder: (context, state) => NoTransitionPage(child: const ThixChatPage()),
         ),
         GoRoute(
           path: AppRoutes.vault,
@@ -527,17 +772,7 @@ class AppRouter {
           name: 'settings',
           pageBuilder: (context, state) => NoTransitionPage(child: SettingsPage()),
         ),
-// ==================== MESSAGES & PROFIL PRINCIPAUX ====================
-GoRoute(
-  path: AppRoutes.messages,
-  name: 'messages',
-  pageBuilder: (context, state) => NoTransitionPage(child: ThixChatPage()), // ou votre page messages
-),
-GoRoute(
-  path: AppRoutes.profile,
-  name: 'profile',
-  pageBuilder: (context, state) => NoTransitionPage(child: UserDashboardPage()), // ou votre page profil
-),
+        
         // ==================== RÉSEAU PRO ====================
         GoRoute(
           path: AppRoutes.networkPro,
@@ -674,86 +909,71 @@ GoRoute(
             return NoTransitionPage(child: ProfilePage(userId: userId));
           },
         ),
+        
         // ==================== THIX ÉVÉNEMENT ====================
-// Page d'accueil
-GoRoute(
-  path: AppRoutes.thixEvent,
-  name: 'thixEvent',
-  pageBuilder: (context, state) => NoTransitionPage(child: const ThixEventHome()),
-),
-
-// Détail d'un événement
-GoRoute(
-  path: AppRoutes.thixEventDetail,
-  name: 'thixEventDetail',
-  pageBuilder: (context, state) {
-    final eventId = state.pathParameters['eventId']!;
-    return NoTransitionPage(child: EventDetailPage(eventId: eventId));
-  },
-),
-
-// Recherche
-GoRoute(
-  path: AppRoutes.thixEventSearch,
-  name: 'thixEventSearch',
-  pageBuilder: (context, state) => NoTransitionPage(child: const EventSearchPage()),
-),
-
-// Événements par catégorie
-GoRoute(
-  path: AppRoutes.thixEventCategory,
-  name: 'thixEventCategory',
-  pageBuilder: (context, state) {
-    final category = state.pathParameters['category']!;
-    return NoTransitionPage(child: EventCategoryPage(category: category));
-  },
-),
-
-// Réservation
-GoRoute(
-  path: AppRoutes.thixEventReservation,
-  name: 'thixEventReservation',
-  pageBuilder: (context, state) {
-    final eventId = state.pathParameters['eventId']!;
-    final quantity = int.tryParse(state.uri.queryParameters['quantity'] ?? '1') ?? 1;
-    return NoTransitionPage(child: EventReservationPage(eventId: eventId, quantity: quantity));
-  },
-),
-
-// Mes billets
-GoRoute(
-  path: AppRoutes.thixEventMyTickets,
-  name: 'thixEventMyTickets',
-  pageBuilder: (context, state) => NoTransitionPage(child: const MyTicketsPage()),
-),
-
-// Favoris
-GoRoute(
-  path: AppRoutes.thixEventFavorites,
-  name: 'thixEventFavorites',
-  pageBuilder: (context, state) => NoTransitionPage(child: const FavoriteEventsPage()),
-),
-
-// Sélection des places (plan de salle)
-GoRoute(
-  path: AppRoutes.thixEventSeatSelection,
-  name: 'thixEventSeatSelection',
-  pageBuilder: (context, state) {
-    final eventId = state.pathParameters['eventId']!;
-    return NoTransitionPage(child: SeatSelectionPage(eventId: eventId));
-  },
-),
-
-// File d'attente
-GoRoute(
-  path: AppRoutes.thixEventWaitingQueue,
-  name: 'thixEventWaitingQueue',
-  pageBuilder: (context, state) {
-    final eventId = state.pathParameters['eventId']!;
-    final quantity = int.tryParse(state.uri.queryParameters['quantity'] ?? '1') ?? 1;
-    return NoTransitionPage(child: WaitingQueuePage(eventId: eventId, requestedQuantity: quantity));
-  },
-),
+        GoRoute(
+          path: AppRoutes.thixEvent,
+          name: 'thixEvent',
+          pageBuilder: (context, state) => NoTransitionPage(child: const ThixEventHome()),
+        ),
+        GoRoute(
+          path: AppRoutes.thixEventDetail,
+          name: 'thixEventDetail',
+          pageBuilder: (context, state) {
+            final eventId = state.pathParameters['eventId']!;
+            return NoTransitionPage(child: EventDetailPage(eventId: eventId));
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.thixEventSearch,
+          name: 'thixEventSearch',
+          pageBuilder: (context, state) => NoTransitionPage(child: const EventSearchPage()),
+        ),
+        GoRoute(
+          path: AppRoutes.thixEventCategory,
+          name: 'thixEventCategory',
+          pageBuilder: (context, state) {
+            final category = state.pathParameters['category']!;
+            return NoTransitionPage(child: EventCategoryPage(category: category));
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.thixEventReservation,
+          name: 'thixEventReservation',
+          pageBuilder: (context, state) {
+            final eventId = state.pathParameters['eventId']!;
+            final quantity = int.tryParse(state.uri.queryParameters['quantity'] ?? '1') ?? 1;
+            return NoTransitionPage(child: EventReservationPage(eventId: eventId, quantity: quantity));
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.thixEventMyTickets,
+          name: 'thixEventMyTickets',
+          pageBuilder: (context, state) => NoTransitionPage(child: const MyTicketsPage()),
+        ),
+        GoRoute(
+          path: AppRoutes.thixEventFavorites,
+          name: 'thixEventFavorites',
+          pageBuilder: (context, state) => NoTransitionPage(child: const FavoriteEventsPage()),
+        ),
+        GoRoute(
+          path: AppRoutes.thixEventSeatSelection,
+          name: 'thixEventSeatSelection',
+          pageBuilder: (context, state) {
+            final eventId = state.pathParameters['eventId']!;
+            return NoTransitionPage(child: SeatSelectionPage(eventId: eventId));
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.thixEventWaitingQueue,
+          name: 'thixEventWaitingQueue',
+          pageBuilder: (context, state) {
+            final eventId = state.pathParameters['eventId']!;
+            final quantity = int.tryParse(state.uri.queryParameters['quantity'] ?? '1') ?? 1;
+            return NoTransitionPage(child: WaitingQueuePage(eventId: eventId, requestedQuantity: quantity));
+          },
+        ),
+        
         // ==================== THIX SANTÉ ====================
         GoRoute(
           path: AppRoutes.thixSante,
@@ -1104,55 +1324,53 @@ GoRoute(
         ),
 
         // ==================== THIX INFO ====================
-// Pages utilisateur
-GoRoute(
-  path: AppRoutes.thixInfo,
-  name: 'thixInfo',
-  pageBuilder: (context, state) => NoTransitionPage(child: const ThixInfoHome()),
-),
-GoRoute(
-  path: AppRoutes.thixInfoArticle,
-  name: 'thixInfoArticle',
-  pageBuilder: (context, state) {
-    final articleId = state.pathParameters['articleId']!;
-    return NoTransitionPage(child: ArticleDetailPage(articleId: articleId));
-  },
-),
-GoRoute(
-  path: AppRoutes.thixInfoSearch,
-  name: 'thixInfoSearch',
-  pageBuilder: (context, state) => NoTransitionPage(child: const SearchPage()),
-),
-GoRoute(
-  path: AppRoutes.thixInfoCategory,
-  name: 'thixInfoCategory',
-  pageBuilder: (context, state) {
-    final category = state.pathParameters['category']!;
-    return NoTransitionPage(child: CategoryArticlesPage(category: category));
-  },
-),
-GoRoute(
-  path: AppRoutes.thixInfoSaved,
-  name: 'thixInfoSaved',
-  pageBuilder: (context, state) => NoTransitionPage(child: const SavedArticlesPage()),
-),
-GoRoute(
-  path: AppRoutes.thixInfoBreaking,
-  name: 'thixInfoBreaking',
-  pageBuilder: (context, state) => NoTransitionPage(child: const BreakingNewsPage()),
-),
-
-// Pages admin
-GoRoute(
-  path: AppRoutes.thixInfoAdmin,
-  name: 'thixInfoAdmin',
-  pageBuilder: (context, state) => NoTransitionPage(child: const AdminNewsDashboard()),
-),
-GoRoute(
-  path: AppRoutes.thixInfoCreate,
-  name: 'thixInfoCreate',
-  pageBuilder: (context, state) => NoTransitionPage(child: const CreateNewsPage()),
-),
+        GoRoute(
+          path: AppRoutes.thixInfo,
+          name: 'thixInfo',
+          pageBuilder: (context, state) => NoTransitionPage(child: const ThixInfoHome()),
+        ),
+        GoRoute(
+          path: AppRoutes.thixInfoArticle,
+          name: 'thixInfoArticle',
+          pageBuilder: (context, state) {
+            final articleId = state.pathParameters['articleId']!;
+            return NoTransitionPage(child: ArticleDetailPage(articleId: articleId));
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.thixInfoSearch,
+          name: 'thixInfoSearch',
+          pageBuilder: (context, state) => NoTransitionPage(child: const SearchPage()),
+        ),
+        GoRoute(
+          path: AppRoutes.thixInfoCategory,
+          name: 'thixInfoCategory',
+          pageBuilder: (context, state) {
+            final category = state.pathParameters['category']!;
+            return NoTransitionPage(child: CategoryArticlesPage(category: category));
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.thixInfoSaved,
+          name: 'thixInfoSaved',
+          pageBuilder: (context, state) => NoTransitionPage(child: const SavedArticlesPage()),
+        ),
+        GoRoute(
+          path: AppRoutes.thixInfoBreaking,
+          name: 'thixInfoBreaking',
+          pageBuilder: (context, state) => NoTransitionPage(child: const BreakingNewsPage()),
+        ),
+        GoRoute(
+          path: AppRoutes.thixInfoAdmin,
+          name: 'thixInfoAdmin',
+          pageBuilder: (context, state) => NoTransitionPage(child: const AdminNewsDashboard()),
+        ),
+        GoRoute(
+          path: AppRoutes.thixInfoCreate,
+          name: 'thixInfoCreate',
+          pageBuilder: (context, state) => NoTransitionPage(child: const CreateNewsPage()),
+        ),
+        
         // ==================== THIX MARKET ====================
         GoRoute(
           path: AppRoutes.thixMarket,
