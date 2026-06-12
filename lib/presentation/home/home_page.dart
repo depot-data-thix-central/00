@@ -232,27 +232,53 @@ class _HomePagePremiumState extends State<HomePagePremium>
     context.push(AppRoutes.networkPro);
   }
 
+  // ✅ CORRIGÉ: Navigation vers THIX INFO avec retry logic
   void _navigateToThixInfo() async {
     try {
-      context.push(AppRoutes.thixInfo);
+      debugPrint('📘 [THIX INFO] Tentative de navigation vers: ${AppRoutes.thixInfo}');
+      await context.push(AppRoutes.thixInfo);
+      debugPrint('✅ [THIX INFO] Navigation réussie');
     } catch (e) {
-      await FullScreenMessage.showError(
-        context,
-        title: 'Service en cours',
-        message: 'THIX INFO sera disponible prochainement.',
-      );
+      debugPrint('❌ [THIX INFO] Erreur 1: $e');
+      // Retry avec route directe
+      try {
+        await context.push('/thix-info');
+        debugPrint('✅ [THIX INFO] Navigation réussie (retry)');
+      } catch (e2) {
+        debugPrint('❌ [THIX INFO] Erreur 2 (retry): $e2');
+        if (mounted) {
+          await FullScreenMessage.showError(
+            context,
+            title: 'Service temporairement indisponible',
+            message: 'THIX INFO sera disponible dans quelques instants. Veuillez réessayer.',
+          );
+        }
+      }
     }
   }
 
+  // ✅ CORRIGÉ: Navigation vers THIX ÉVÉNEMENT avec retry logic
   void _navigateToThixEvent() async {
     try {
-      context.push(AppRoutes.thixEvent);
+      debugPrint('📅 [THIX ÉVÉNEMENT] Tentative de navigation vers: ${AppRoutes.thixEvent}');
+      await context.push(AppRoutes.thixEvent);
+      debugPrint('✅ [THIX ÉVÉNEMENT] Navigation réussie');
     } catch (e) {
-      await FullScreenMessage.showError(
-        context,
-        title: 'Service en cours',
-        message: 'THIX ÉVÉNEMENT sera disponible prochainement.',
-      );
+      debugPrint('❌ [THIX ÉVÉNEMENT] Erreur 1: $e');
+      // Retry avec route directe
+      try {
+        await context.push('/thix-event');
+        debugPrint('✅ [THIX ÉVÉNEMENT] Navigation réussie (retry)');
+      } catch (e2) {
+        debugPrint('❌ [THIX ÉVÉNEMENT] Erreur 2 (retry): $e2');
+        if (mounted) {
+          await FullScreenMessage.showError(
+            context,
+            title: 'Service temporairement indisponible',
+            message: 'THIX ÉVÉNEMENT sera disponible dans quelques instants. Veuillez réessayer.',
+          );
+        }
+      }
     }
   }
 
@@ -793,7 +819,7 @@ class _PremiumHeader extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'Que voulez-vous faire aujourd’hui ?',
+                'Que voulez-vous faire aujourd'hui ?',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.8),
                   fontSize: 11,
@@ -1017,28 +1043,27 @@ class _NotificationPreviewCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: ThixPremiumColors.grayLight),
         ),
         child: Row(
           children: [
             Container(
-              width: 34,
-              height: 34,
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: ThixPremiumColors.primaryDark.withOpacity(0.06),
+                color: ThixPremiumColors.primaryDark.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
                 Icons.notifications_none_rounded,
                 color: ThixPremiumColors.primaryDark,
-                size: 18,
+                size: 20,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1046,15 +1071,17 @@ class _NotificationPreviewCard extends StatelessWidget {
                   Text(
                     'Notifications',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: FontWeight.w800,
                       color: ThixPremiumColors.primaryDark,
                     ),
                   ),
                   Text(
                     'Nouvelles mises à jour disponibles',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 10,
                       color: ThixPremiumColors.grayMedium,
                     ),
                   ),
@@ -1064,7 +1091,7 @@ class _NotificationPreviewCard extends StatelessWidget {
             const Icon(
               Icons.arrow_forward_ios_rounded,
               size: 12,
-              color: ThixPremiumColors.goldDark,
+              color: ThixPremiumColors.grayMedium,
             ),
           ],
         ),
@@ -1081,13 +1108,14 @@ class _ServiceCard extends StatefulWidget {
   final Color iconColor;
   final int? badgeCount;
   final VoidCallback onTap;
+
   const _ServiceCard({
     required this.icon,
     required this.title,
     required this.iconBackgroundColor,
     required this.iconColor,
-    this.badgeCount,
     required this.onTap,
+    this.badgeCount,
   });
 
   @override
@@ -1106,7 +1134,7 @@ class _ServiceCardState extends State<_ServiceCard>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.92).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -1117,53 +1145,63 @@ class _ServiceCardState extends State<_ServiceCard>
     super.dispose();
   }
 
+  void _onTapDown(_) => _controller.forward();
+  void _onTapUp(_) {
+    _controller.reverse();
+    widget.onTap();
+  }
+  void _onTapCancel() => _controller.reverse();
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => _controller.forward(),
-      onTapUp: (_) {
-        _controller.reverse();
-        widget.onTap();
-      },
-      onTapCancel: () => _controller.reverse(),
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: ThixPremiumColors.grayLight, width: 0.8),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: ThixPremiumColors.grayLight, width: 0.5),
+            boxShadow: [
+              BoxShadow(
+                color: ThixPremiumColors.primaryDark.withOpacity(0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Stack(
-            clipBehavior: Clip.none,
             children: [
-              Center(
+              Padding(
+                padding: const EdgeInsets.all(12),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Container(
-                      width: 24,
-                      height: 24,
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: widget.iconBackgroundColor,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(widget.icon, color: widget.iconColor, size: 18),
+                      child: Icon(
+                        widget.icon,
+                        color: widget.iconColor,
+                        size: 24,
+                      ),
                     ),
-                    const SizedBox(height: 6),
-                    Expanded(
-                      child: Text(
-                        widget.title,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: ThixPremiumColors.primaryDark,
-                          height: 1.1,
-                        ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.title,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: ThixPremiumColors.primaryDark,
                       ),
                     ),
                   ],
@@ -1171,22 +1209,20 @@ class _ServiceCardState extends State<_ServiceCard>
               ),
               if (widget.badgeCount != null && widget.badgeCount! > 0)
                 Positioned(
-                  top: -2,
-                  right: 2,
+                  top: 6,
+                  right: 6,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [ThixPremiumColors.goldDark, ThixPremiumColors.goldPrimary],
-                      ),
+                      color: Colors.red,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       '${widget.badgeCount}',
                       style: const TextStyle(
-                        color: ThixPremiumColors.primaryDark,
+                        color: Colors.white,
                         fontSize: 8,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
@@ -1199,74 +1235,65 @@ class _ServiceCardState extends State<_ServiceCard>
   }
 }
 
-// ==================== BANNIÈRE MISSION ====================
+// ==================== BANNIÈRE DE MISSION ====================
 class _MissionBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 90,
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(13),
         gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [ThixPremiumColors.primaryDark, ThixPremiumColors.accentBlue],
+          colors: [ThixPremiumColors.primaryDark, ThixPremiumColors.primaryElectric],
         ),
-        border: Border.all(
-          color: ThixPremiumColors.goldPrimary.withOpacity(0.25),
-        ),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: ThixPremiumColors.goldPrimary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'NOTRE MISSION',
-                    style: TextStyle(
-                      color: ThixPremiumColors.goldLight,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.0,
+          const Text(
+            'Rejoindre THIX',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Créez un compte pour accéder à tous les services THIX.',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    // Gérer la création de compte
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: ThixPremiumColors.goldPrimary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Créer un compte',
+                        style: TextStyle(
+                          color: ThixPremiumColors.primaryDark,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Construisons l\'avenir de la jeunesse.',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Accédez à des opportunités et un réseau engagé.',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.75),
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 4),
-          Icon(
-            Icons.shield_outlined,
-            size: 50,
-            color: ThixPremiumColors.goldPrimary.withOpacity(0.15),
+              ),
+            ],
           ),
         ],
       ),
@@ -1274,12 +1301,13 @@ class _MissionBanner extends StatelessWidget {
   }
 }
 
-// ==================== NAVIGATION BASSE FLOTTANTE ====================
+// ==================== NAV FLOTTANTE ====================
 class _FloatingBottomNav extends StatelessWidget {
   final VoidCallback onScanTap;
   final VoidCallback onChatTap;
   final VoidCallback onProfileTap;
   final VoidCallback onEmergencyTap;
+
   const _FloatingBottomNav({
     required this.onScanTap,
     required this.onChatTap,
@@ -1289,69 +1317,65 @@ class _FloatingBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          height: 60,
-          decoration: BoxDecoration(
-            color: ThixPremiumColors.white.withOpacity(0.88),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.white.withOpacity(0.5)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavItem(icon: Icons.home_filled, label: 'Accueil', active: true, onTap: () {}),
-              _NavItem(icon: Icons.grid_view_rounded, label: 'Services', onTap: () {}),
-              GestureDetector(
-                onTap: onEmergencyTap,
-                child: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFE53935), Color(0xFFB71C1C)],
-                    ),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.4),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0xFFE53935).withOpacity(0.5),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.warning_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-              ),
-              _NavItem(icon: Icons.chat_bubble_outline_rounded, label: 'Messages', onTap: onChatTap),
-              _NavItem(icon: Icons.person_outline_rounded, label: 'Profil', onTap: onProfileTap),
-            ],
-          ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+      child: Container(
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: ThixPremiumColors.primaryDark.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _NavButton(
+              icon: Icons.home_rounded,
+              label: 'Accueil',
+              onTap: () {},
+            ),
+            _NavButton(
+              icon: Icons.apps_rounded,
+              label: 'Services',
+              onTap: () {},
+            ),
+            FloatingActionButton(
+              heroTag: 'emergency',
+              onPressed: onEmergencyTap,
+              backgroundColor: const Color(0xFFE63946),
+              child: const Icon(Icons.warning_rounded, color: Colors.white),
+            ),
+            _NavButton(
+              icon: Icons.chat_rounded,
+              label: 'Messages',
+              onTap: onChatTap,
+            ),
+            _NavButton(
+              icon: Icons.person_rounded,
+              label: 'Profil',
+              onTap: onProfileTap,
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _NavItem extends StatelessWidget {
+class _NavButton extends StatelessWidget {
   final IconData icon;
   final String label;
-  final bool active;
   final VoidCallback onTap;
-  const _NavItem({
+
+  const _NavButton({
     required this.icon,
     required this.label,
-    this.active = false,
     required this.onTap,
   });
 
@@ -1362,19 +1386,11 @@ class _NavItem extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            color: active ? ThixPremiumColors.primaryDark : ThixPremiumColors.grayMedium,
-            size: 20,
-          ),
+          Icon(icon, color: ThixPremiumColors.primaryDark, size: 22),
           const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: active ? FontWeight.w800 : FontWeight.w500,
-              color: active ? ThixPremiumColors.primaryDark : ThixPremiumColors.grayMedium,
-            ),
+            style: const TextStyle(fontSize: 8, color: ThixPremiumColors.grayMedium),
           ),
         ],
       ),
