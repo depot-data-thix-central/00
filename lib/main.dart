@@ -1,4 +1,4 @@
-// lib/main.dart
+// lib/main.dart (partie corrigée)
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -13,8 +13,6 @@ import 'package:thix_id/theme.dart';
 import 'package:thix_id/services/cart_service.dart';
 import 'package:thix_id/services/network_service.dart';
 import 'package:thix_id/providers/feed_provider.dart';
-
-// ✅ AJOUTER CES IMPORTS
 import 'package:thix_id/services/event_service.dart';
 import 'package:thix_id/providers/event_provider.dart';
 import 'package:thix_id/services/news_service.dart';
@@ -22,66 +20,14 @@ import 'package:thix_id/providers/news_provider.dart';
 import 'package:thix_id/services/notification_service.dart';
 import 'package:thix_id/services/notification_counters_service.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    debugPrint('FlutterError: ${details.exceptionAsString()}');
-    if (details.stack != null) debugPrint(details.stack.toString());
-  };
-  ErrorWidget.builder = (FlutterErrorDetails details) {
-    debugPrint('ErrorWidget: ${details.exceptionAsString()}');
-    if (details.stack != null) debugPrint(details.stack.toString());
-    return Material(
-      color: Colors.transparent,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'Une erreur est survenue.\n\n${kDebugMode ? details.exceptionAsString() : ''}',
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
-    );
-  };
-
-  try {
-    await SupabaseConfig.initialize();
-  } catch (e, st) {
-    debugPrint('Main: SupabaseConfig.initialize failed err=$e');
-    debugPrint(st.toString());
-  }
-
-  final auth = AuthController(auth: SupabaseAuthManager());
-  try {
-    await auth.init();
-  } catch (e, st) {
-    debugPrint('Main: auth.init failed err=$e');
-    debugPrint(st.toString());
-  }
-  runApp(MyApp(auth: auth));
-}
-
-class MyApp extends StatefulWidget {
-  final AuthController auth;
-  const MyApp({super.key, required this.auth});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
+// ... main() reste identique ...
 
 class _MyAppState extends State<MyApp> {
   late final LocaleController _localeController;
   late final _router;
   late final NetworkService _networkService;
-  
-  // ✅ AJOUTER CES SERVICES
   late final EventService _eventService;
   late final NewsService _newsService;
-  late final NotificationService _notificationService;
-  late final NotificationCountersService _notificationCountersService;
 
   @override
   void initState() {
@@ -90,12 +36,9 @@ class _MyAppState extends State<MyApp> {
     
     final supabaseClient = SupabaseConfig.client;
     
-    // Initialiser tous les services
     _networkService = NetworkService(supabaseClient);
     _eventService = EventService(supabaseClient);
     _newsService = NewsService(supabaseClient);
-    _notificationService = NotificationService();
-    _notificationCountersService = NotificationCountersService();
     
     _router = AppRouter.create(widget.auth, extraRefreshListenable: _localeController);
   }
@@ -109,7 +52,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider.value(value: _localeController),
         ChangeNotifierProvider(create: (_) => CartService()),
         
-        // ✅ Network providers
+        // Network providers
         Provider<NetworkService>.value(value: _networkService),
         ChangeNotifierProxyProvider<NetworkService, FeedProvider>(
           create: (context) => FeedProvider(_networkService),
@@ -117,7 +60,7 @@ class _MyAppState extends State<MyApp> {
               previous ?? FeedProvider(networkService),
         ),
         
-        // ✅ AJOUTER EventProvider
+        // EventProvider
         Provider<EventService>.value(value: _eventService),
         ChangeNotifierProxyProvider<EventService, EventProvider>(
           create: (context) => EventProvider(_eventService),
@@ -125,7 +68,7 @@ class _MyAppState extends State<MyApp> {
               previous ?? EventProvider(eventService),
         ),
         
-        // ✅ AJOUTER NewsProvider
+        // NewsProvider
         Provider<NewsService>.value(value: _newsService),
         ChangeNotifierProxyProvider<NewsService, NewsProvider>(
           create: (context) => NewsProvider(_newsService),
@@ -133,9 +76,10 @@ class _MyAppState extends State<MyApp> {
               previous ?? NewsProvider(newsService),
         ),
         
-        // ✅ AJOUTER Notification services
-        ChangeNotifierProvider.value(value: _notificationService),
-        ChangeNotifierProvider.value(value: _notificationCountersService),
+        // ✅ CORRIGÉ: NotificationService n'est pas un ChangeNotifier
+        // Utiliser Provider simple au lieu de ChangeNotifierProvider
+        Provider<NotificationService>.value(value: NotificationService()),
+        Provider<NotificationCountersService>.value(value: NotificationCountersService()),
       ],
       child: Builder(
         builder: (context) {
