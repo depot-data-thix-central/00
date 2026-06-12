@@ -35,6 +35,9 @@ class _NetworkProHomeState extends State<NetworkProHome> with TickerProviderStat
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadAllData();
+      // ✅ CORRIGÉ: Initialiser le realtime listening du FeedProvider
+      final feedProvider = Provider.of<FeedProvider>(context, listen: false);
+      feedProvider.initRealtime();
     });
 
     _setupRealtimeSubscriptions();
@@ -49,23 +52,60 @@ class _NetworkProHomeState extends State<NetworkProHome> with TickerProviderStat
     super.dispose();
   }
 
+  /// ✅ CORRIGÉ: Listener realtime Supabase pour les changements de publications
   void _setupRealtimeSubscriptions() {
-    final supabase = Supabase.instance.client;
-    final feedProvider = Provider.of<FeedProvider>(context, listen: false);
+    try {
+      final supabase = Supabase.instance.client;
+      final feedProvider = Provider.of<FeedProvider>(context, listen: false);
 
-    supabase.channel('public:posts')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'posts',
-          callback: (payload) async {
-            if (mounted) {
-              await feedProvider.loadFeed(feedType: _feedType);
-              setState(() {});
+      supabase.channel('public:posts')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: 'public',
+            table: 'posts',
+            callback: (payload) async {
+              debugPrint('📬 [REALTIME] Nouvelle publication détectée en BDD!');
+              if (mounted) {
+                // Recharger le feed pour intégrer la nouvelle publication
+                await feedProvider.loadFeed(feedType: _feedType);
+                setState(() {});
+              }
+            },
+          )
+          .onPostgresChanges(
+            event: PostgresChangeEvent.update,
+            schema: 'public',
+            table: 'posts',
+            callback: (payload) async {
+              debugPrint('📝 [REALTIME] Publication mise à jour');
+              if (mounted) {
+                await feedProvider.loadFeed(feedType: _feedType);
+                setState(() {});
+              }
+            },
+          )
+          .onPostgresChanges(
+            event: PostgresChangeEvent.delete,
+            schema: 'public',
+            table: 'posts',
+            callback: (payload) async {
+              debugPrint('🗑️ [REALTIME] Publication supprimée');
+              if (mounted) {
+                await feedProvider.loadFeed(feedType: _feedType);
+                setState(() {});
+              }
+            },
+          )
+          .subscribe((status, err) {
+            if (err != null) {
+              debugPrint('❌ Erreur Realtime: $err');
+            } else if (status == RealtimeSubscriptionStatus.subscribed) {
+              debugPrint('✅ Realtime connecté au feed');
             }
-          },
-        )
-        .subscribe();
+          });
+    } catch (e) {
+      debugPrint('❌ _setupRealtimeSubscriptions error: $e');
+    }
   }
 
   Future<void> _loadAllData() async {
@@ -88,12 +128,13 @@ class _NetworkProHomeState extends State<NetworkProHome> with TickerProviderStat
     }
   }
 
+  /// ✅ Pull-to-refresh manuel
   Future<void> _onRefresh() async {
     if (_isRefreshing) return;
     setState(() => _isRefreshing = true);
 
     final feedProvider = Provider.of<FeedProvider>(context, listen: false);
-    await feedProvider.loadFeed(feedType: _feedType);
+    await feedProvider.refreshFeed();
 
     if (mounted) setState(() => _isRefreshing = false);
   }
@@ -405,7 +446,7 @@ class _NetworkProHomeState extends State<NetworkProHome> with TickerProviderStat
     );
   }
 
-  // ⭐ CORRIGÉ - Utilisation sécurisée des propriétés
+  /// ⭐ CORRIGÉ - Utilisation sécurisée des propriétés
   Widget _buildPostCard(NetworkPost post) {
     // Vérification sécurisée pour mediaUrl
     final mediaUrl = (post as dynamic).mediaUrl;
@@ -475,7 +516,7 @@ class _NetworkProHomeState extends State<NetworkProHome> with TickerProviderStat
               child: Text(post.content!, style: const TextStyle(fontSize: 12, height: 1.4)),
             ),
           
-          // ⭐ CORRIGÉ - Image avec vérification
+          /// ⭐ CORRIGÉ - Image avec vérification
           if (hasImage)
             Padding(
               padding: const EdgeInsets.only(top: 8),
