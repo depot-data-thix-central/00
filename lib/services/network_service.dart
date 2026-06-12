@@ -75,7 +75,7 @@ class NetworkService {
           'author_title': e['users']?['profession'],
           'likes_count': (likesData as List).length,
           'comments_count': (commentsData as List).length,
-          'is_liked_by_current_user': (likedData as List).isNotEmpty,
+          'is_liked': (likedData as List).isNotEmpty,
         }));
       }
       
@@ -146,16 +146,13 @@ class NetworkService {
           'author_title': userData?['profession'],
           'likes_count': (likesData as List).length,
           'comments_count': (commentsData as List).length,
-          'is_liked_by_current_user': (userLikedData as List).isNotEmpty,
+          'is_liked': (userLikedData as List).isNotEmpty,
         });
         
         double score = 0;
-        
-        // Score basé sur l'engagement
         score += post.likesCount * 1.0;
         score += post.commentsCount * 3.0;
         
-        // Score basé sur la récence
         final ageInMinutes = DateTime.now().difference(post.createdAt).inMinutes;
         final recencyScore = 100.0 / (ageInMinutes + 10);
         score += recencyScore;
@@ -165,8 +162,13 @@ class NetworkService {
           score += 50;
         }
         
-        // Malus pour les vieux posts
-        if (ageInMinutes > 60 * 24) { // Plus de 24h
+        // Bonus pour les posts avec des images
+        if (post.images != null && post.images!.isNotEmpty) {
+          score += 20;
+        }
+        
+        // Malus pour les vieux posts (plus de 24h)
+        if (ageInMinutes > 60 * 24) {
           score *= 0.5;
         }
         
@@ -184,7 +186,7 @@ class NetworkService {
   }
 
   // ============================================================
-  // SECTION 3: POSTS - CREATE / UPDATE / DELETE
+  // SECTION 3: CRÉATION DE POST
   // ============================================================
 
   Future<String> createPost(String content, List<String> images) async {
@@ -198,9 +200,6 @@ class NetworkService {
         'images': images,
         'is_public': true,
         'created_at': DateTime.now().toIso8601String(),
-        'likes_count': 0,
-        'comments_count': 0,
-        'shares_count': 0,
       };
       
       final response = await _supabase
@@ -245,7 +244,7 @@ class NetworkService {
   }
 
   // ============================================================
-  // SECTION 4: INTERACTIONS (LIKES & COMMENTAIRES)
+  // SECTION 4: INTERACTIONS (LIKES)
   // ============================================================
 
   Future<bool> likePost(String postId) async {
@@ -253,7 +252,6 @@ class NetworkService {
       final userId = currentUserId;
       if (userId.isEmpty) return false;
       
-      // Vérifier si déjà liké
       final existing = await _supabase
           .from('post_likes')
           .select()
@@ -262,14 +260,13 @@ class NetworkService {
       
       if ((existing as List).isNotEmpty) return true;
       
-      // Ajouter le like
       await _supabase.from('post_likes').insert({
         'post_id': postId,
         'user_id': userId,
         'created_at': DateTime.now().toIso8601String(),
       });
       
-      // Incrémenter le compteur
+      // Mettre à jour le compteur dans la table posts
       await _supabase.rpc('increment_post_likes', params: {'post_id': postId});
       
       return true;
@@ -290,7 +287,6 @@ class NetworkService {
           .eq('post_id', postId)
           .eq('user_id', userId);
       
-      // Décrémenter le compteur
       await _supabase.rpc('decrement_post_likes', params: {'post_id': postId});
       
       return true;
@@ -300,22 +296,22 @@ class NetworkService {
     }
   }
 
-  /// ✅ CORRIGÉ: Méthode pour ajouter un commentaire
+  // ============================================================
+  // SECTION 5: COMMENTAIRES
+  // ============================================================
+
   Future<bool> addCommentToPost(String postId, String comment) async {
     try {
       final userId = currentUserId;
       if (userId.isEmpty || comment.trim().isEmpty) return false;
       
-      final newComment = {
+      await _supabase.from('comments').insert({
         'post_id': postId,
         'user_id': userId,
         'content': comment.trim(),
         'created_at': DateTime.now().toIso8601String(),
-      };
+      });
       
-      await _supabase.from('comments').insert(newComment);
-      
-      // Incrémenter le compteur de commentaires
       await _supabase.rpc('increment_post_comments', params: {'post_id': postId});
       
       return true;
@@ -338,6 +334,7 @@ class NetworkService {
         return {
           'id': e['id'],
           'content': e['content'],
+          'user_id': e['user_id'],
           'user_name': userData?['display_name'] ?? 'Utilisateur',
           'user_avatar': userData?['photo_url'],
           'created_at': e['created_at'],
@@ -350,7 +347,7 @@ class NetworkService {
   }
 
   // ============================================================
-  // SECTION 5: SHARE
+  // SECTION 6: PARTAGE
   // ============================================================
 
   Future<void> sharePost(BuildContext context, NetworkPost post) async {
@@ -360,7 +357,6 @@ class NetworkService {
         subject: 'Publication de ${post.authorName}',
       );
       
-      // Incrémenter le compteur de partages
       await _supabase.rpc('increment_post_shares', params: {'post_id': post.id});
     } catch (e) {
       debugPrint('❌ Error sharePost: $e');
@@ -368,65 +364,79 @@ class NetworkService {
   }
 
   // ============================================================
-  // SECTION 6: FOLLOW / CONNECTIONS
+  // SECTION 7: CONNEXIONS
   // ============================================================
 
-  Future<bool> followUser(String userId) async {
+  Future<bool> sendConnectionRequest(String userId) async {
     try {
       final currentId = currentUserId;
       if (currentId.isEmpty || currentId == userId) return false;
       
-      await _supabase.from('follows').insert({
-        'follower_id': currentId,
-        'following_id': userId,
+      await _supabase.from('connections').insert({
+        'user_id': currentId,
+        'connection_id': userId,
+        'status': 'pending',
         'created_at': DateTime.now().toIso8601String(),
       });
       
       return true;
     } catch (e) {
-      debugPrint('❌ Error followUser: $e');
+      debugPrint('❌ Error sendConnectionRequest: $e');
       return false;
     }
   }
 
-  Future<bool> unfollowUser(String userId) async {
+  Future<bool> acceptConnectionRequest(String connectionId) async {
     try {
-      final currentId = currentUserId;
-      if (currentId.isEmpty) return false;
-      
       await _supabase
-          .from('follows')
-          .delete()
-          .eq('follower_id', currentId)
-          .eq('following_id', userId);
-      
+          .from('connections')
+          .update({'status': 'accepted'})
+          .eq('id', connectionId);
       return true;
     } catch (e) {
-      debugPrint('❌ Error unfollowUser: $e');
+      debugPrint('❌ Error acceptConnectionRequest: $e');
       return false;
     }
   }
 
-  Future<bool> isFollowing(String userId) async {
+  Future<bool> rejectConnectionRequest(String connectionId) async {
     try {
-      final currentId = currentUserId;
-      if (currentId.isEmpty) return false;
-      
-      final response = await _supabase
-          .from('follows')
-          .select()
-          .eq('follower_id', currentId)
-          .eq('following_id', userId);
-      
-      return (response as List).isNotEmpty;
+      await _supabase.from('connections').delete().eq('id', connectionId);
+      return true;
     } catch (e) {
-      debugPrint('❌ Error isFollowing: $e');
+      debugPrint('❌ Error rejectConnectionRequest: $e');
       return false;
+    }
+  }
+
+  Future<List<NetworkConnection>> getConnections() async {
+    try {
+      final response = await _supabase
+          .from('connections')
+          .select('*, connected_user:connection_id(display_name, photo_url, profession)')
+          .eq('user_id', currentUserId)
+          .eq('status', 'accepted');
+      
+      return (response as List).map((e) {
+        final userData = e['connected_user'] as Map<String, dynamic>?;
+        return NetworkConnection(
+          id: e['id'],
+          userId: e['connection_id'],
+          userName: userData?['display_name'] ?? 'Utilisateur',
+          userAvatar: userData?['photo_url'],
+          userTitle: userData?['profession'],
+          status: e['status'],
+          createdAt: DateTime.parse(e['created_at']),
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('❌ Error getConnections: $e');
+      return [];
     }
   }
 
   // ============================================================
-  // SECTION 7: STORIES
+  // SECTION 8: STORIES
   // ============================================================
 
   Future<List<NetworkStory>> getStories() async {
@@ -455,8 +465,33 @@ class NetworkService {
     }
   }
 
+  Future<bool> createStory(File mediaFile, String type) async {
+    try {
+      final userId = currentUserId;
+      if (userId.isEmpty) return false;
+      
+      final fileName = 'stories/${DateTime.now().millisecondsSinceEpoch}.${type == 'video' ? 'mp4' : 'jpg'}';
+      await _supabase.storage.from('network').upload(fileName, mediaFile);
+      final mediaUrl = _supabase.storage.from('network').getPublicUrl(fileName);
+      
+      await _supabase.from('stories').insert({
+        'user_id': userId,
+        'media_url': mediaUrl,
+        'type': type,
+        'created_at': DateTime.now().toIso8601String(),
+        'expires_at': DateTime.now().add(const Duration(hours: 24)).toIso8601String(),
+        'is_active': true,
+      });
+      
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error createStory: $e');
+      return false;
+    }
+  }
+
   // ============================================================
-  // SECTION 8: NOTIFICATIONS
+  // SECTION 9: NOTIFICATIONS
   // ============================================================
 
   Future<List<NetworkNotification>> getNotifications() async {
@@ -499,8 +534,23 @@ class NetworkService {
     }
   }
 
+  Future<int> getUnreadNotificationsCount() async {
+    try {
+      final response = await _supabase
+          .from('notifications')
+          .select('id', count: CountOption.exact)
+          .eq('user_id', currentUserId)
+          .eq('is_read', false);
+      
+      return response.count ?? 0;
+    } catch (e) {
+      debugPrint('❌ Error getUnreadNotificationsCount: $e');
+      return 0;
+    }
+  }
+
   // ============================================================
-  // SECTION 9: MESSAGES
+  // SECTION 10: MESSAGES
   // ============================================================
 
   Future<List<NetworkMessage>> getConversations() async {
@@ -542,18 +592,38 @@ class NetworkService {
     }
   }
 
+  Future<bool> sendMessage(String conversationId, String content) async {
+    try {
+      final userId = currentUserId;
+      if (userId.isEmpty || content.trim().isEmpty) return false;
+      
+      await _supabase.from('messages').insert({
+        'conversation_id': conversationId,
+        'sender_id': userId,
+        'content': content.trim(),
+        'created_at': DateTime.now().toIso8601String(),
+        'is_read': false,
+      });
+      
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error sendMessage: $e');
+      return false;
+    }
+  }
+
   // ============================================================
-  // SECTION 10: UPLOAD
+  // SECTION 11: UPLOAD
   // ============================================================
 
   Future<String?> uploadImage(File imageFile) async {
     try {
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final path = 'posts/$fileName';
+      final fileName = 'posts/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final path = 'network/$fileName';
       
-      await _supabase.storage.from('network').upload(path, imageFile);
+      await _supabase.storage.from('network').upload(fileName, imageFile);
       
-      final publicUrl = _supabase.storage.from('network').getPublicUrl(path);
+      final publicUrl = _supabase.storage.from('network').getPublicUrl(fileName);
       return publicUrl;
     } catch (e) {
       debugPrint('❌ Error uploadImage: $e');
@@ -561,15 +631,26 @@ class NetworkService {
     }
   }
 
+  Future<List<String>> uploadMultipleImages(List<File> images) async {
+    final List<String> urls = [];
+    for (final image in images) {
+      final url = await uploadImage(image);
+      if (url != null) {
+        urls.add(url);
+      }
+    }
+    return urls;
+  }
+
   // ============================================================
-  // SECTION 11: HELPERS
+  // SECTION 12: PROFIL UTILISATEUR
   // ============================================================
 
   Future<Map<String, dynamic>?> getUserProfile(String userId) async {
     try {
       final response = await _supabase
           .from('users')
-          .select('id, display_name, photo_url, profession, bio, location')
+          .select('id, display_name, photo_url, profession, bio, location, website')
           .eq('id', userId)
           .single();
       
@@ -619,6 +700,77 @@ class NetworkService {
     } catch (e) {
       debugPrint('❌ Error getUserFollowingCount: $e');
       return 0;
+    }
+  }
+
+  Future<bool> updateUserProfile(Map<String, dynamic> data) async {
+    try {
+      await _supabase
+          .from('users')
+          .update(data)
+          .eq('id', currentUserId);
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error updateUserProfile: $e');
+      return false;
+    }
+  }
+
+  // ============================================================
+  // SECTION 13: RECHERCHE
+  // ============================================================
+
+  Future<List<Map<String, dynamic>>> searchUsers(String query) async {
+    try {
+      if (query.trim().isEmpty) return [];
+      
+      final response = await _supabase
+          .from('users')
+          .select('id, display_name, photo_url, profession')
+          .ilike('display_name', '%$query%')
+          .limit(20);
+      
+      return (response as List).cast<Map<String, dynamic>>();
+    } catch (e) {
+      debugPrint('❌ Error searchUsers: $e');
+      return [];
+    }
+  }
+
+  Future<List<NetworkPost>> searchPosts(String query) async {
+    try {
+      if (query.trim().isEmpty) return [];
+      
+      final response = await _supabase
+          .from('posts')
+          .select('''
+            *,
+            users:user_id (
+              display_name,
+              photo_url,
+              profession
+            )
+          ''')
+          .ilike('content', '%$query%')
+          .eq('is_public', true)
+          .order('created_at', ascending: false)
+          .limit(20);
+      
+      return (response as List).map((e) {
+        final userData = e['users'] as Map<String, dynamic>?;
+        return NetworkPost.fromJson({
+          ...e,
+          'author_name': userData?['display_name'] ?? 'Utilisateur',
+          'author_avatar': userData?['photo_url'],
+          'author_title': userData?['profession'],
+          'likes_count': 0,
+          'comments_count': 0,
+          'is_liked': false,
+        });
+      }).toList();
+    } catch (e) {
+      debugPrint('❌ Error searchPosts: $e');
+      return [];
     }
   }
 }
