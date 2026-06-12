@@ -11,7 +11,6 @@ class EventSeatService {
 
   String get currentUserId => _supabase.auth.currentUser?.id ?? '';
 
-  // Récupérer le plan de salle
   Future<List<EventSeat>> getSeatMap(String eventId) async {
     try {
       final response = await _supabase
@@ -32,7 +31,6 @@ class EventSeatService {
     }
   }
 
-  // Réserver temporairement des places (15 min)
   Future<bool> reserveSeats(String eventId, List<String> seatIds) async {
     final userId = currentUserId;
     if (userId.isEmpty) return false;
@@ -49,7 +47,6 @@ class EventSeatService {
           })
           .inFilter('id', seatIds);
 
-      // Timer pour libérer automatiquement après 15 min
       Timer(const Duration(minutes: 15), () async {
         await _releaseExpiredReservations(eventId);
       });
@@ -61,7 +58,6 @@ class EventSeatService {
     }
   }
 
-  // ✅ AJOUTÉ: Libérer des places sans confirmation
   Future<bool> releaseSeats(String eventId, List<String> seatIds) async {
     try {
       await _supabase
@@ -79,7 +75,6 @@ class EventSeatService {
     }
   }
 
-  // Confirmer l'achat des places
   Future<bool> confirmSeats(String eventId, List<String> seatIds, int bookingId) async {
     try {
       await _supabase
@@ -98,7 +93,6 @@ class EventSeatService {
     }
   }
 
-  // Libérer les réservations expirées
   Future<void> _releaseExpiredReservations(String eventId) async {
     try {
       await _supabase
@@ -116,7 +110,6 @@ class EventSeatService {
     }
   }
 
-  // Obtenir le nombre de places disponibles
   Future<int> getAvailableSeatsCount(String eventId) async {
     try {
       final response = await _supabase
@@ -132,7 +125,6 @@ class EventSeatService {
     }
   }
 
-  // ✅ AJOUTÉ: Obtenir les places sélectionnées par leurs IDs
   Future<List<EventSeat>> getSeatsByIds(List<String> seatIds) async {
     try {
       if (seatIds.isEmpty) return [];
@@ -153,7 +145,6 @@ class EventSeatService {
     }
   }
 
-  // ✅ AJOUTÉ: Vérifier si des places sont toujours disponibles
   Future<bool> areSeatsAvailable(String eventId, List<String> seatIds) async {
     try {
       final response = await _supabase
@@ -174,7 +165,20 @@ class EventSeatService {
     }
   }
 
-  // Créer le plan de salle (admin)
+  Future<double> getTotalPriceForSeats(List<String> seatIds) async {
+    try {
+      double total = 0;
+      final seats = await getSeatsByIds(seatIds);
+      for (var seat in seats) {
+        total += seat.price ?? 0;
+      }
+      return total;
+    } catch (e) {
+      debugPrint('❌ Error getTotalPriceForSeats: $e');
+      return 0;
+    }
+  }
+
   Future<void> createSeatMap(String eventId, int rows, int seatsPerRow, double basePrice) async {
     try {
       final seats = <Map<String, dynamic>>[];
@@ -199,7 +203,6 @@ class EventSeatService {
     }
   }
 
-  // ✅ AJOUTÉ: Mettre à jour les prix par catégorie
   Future<void> updateSeatPrices(String eventId, Map<String, double> pricesByCategory) async {
     try {
       for (var entry in pricesByCategory.entries) {
@@ -214,25 +217,12 @@ class EventSeatService {
     }
   }
 
-  // ✅ AJOUTÉ: Obtenir le prix total des places sélectionnées
-  Future<double> getTotalPriceForSeats(List<String> seatIds) async {
-    try {
-      final seats = await getSeatsByIds(seatIds);
-      return seats.fold(0, (sum, seat) => sum + (seat.price ?? 0));
-    } catch (e) {
-      debugPrint('❌ Error getTotalPriceForSeats: $e');
-      return 0;
-    }
-  }
-
-  // ✅ CORRIGÉ: _getCategory avec comparaison correcte des lettres
   String _getCategory(String row, int number) {
-    // Convertir le caractère en code ASCII pour comparer
     final rowCode = row.codeUnitAt(0);
     
-    if (rowCode >= 65 && rowCode <= 67) return 'vip';      // A, B, C
-    if (rowCode >= 68 && rowCode <= 70) return 'gold';     // D, E, F
-    if (rowCode >= 71 && rowCode <= 74) return 'family';   // G, H, I, J
+    if (rowCode >= 65 && rowCode <= 67) return 'vip';
+    if (rowCode >= 68 && rowCode <= 70) return 'gold';
+    if (rowCode >= 71 && rowCode <= 74) return 'family';
     return 'standard';
   }
 }
