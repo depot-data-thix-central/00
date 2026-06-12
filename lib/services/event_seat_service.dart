@@ -1,3 +1,4 @@
+
 // lib/services/event_seat_service.dart
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -110,15 +111,17 @@ class EventSeatService {
     }
   }
 
+  // ✅ CORRIGÉ: getAvailableSeatsCount sans utiliser count
   Future<int> getAvailableSeatsCount(String eventId) async {
     try {
       final response = await _supabase
           .from('event_seats')
-          .select('id', count: CountOption.exact)
+          .select('id')
           .eq('event_id', eventId)
           .eq('status', 'available');
       
-      return response.count ?? 0;
+      // Compter manuellement le nombre d'éléments
+      return (response as List).length;
     } catch (e) {
       debugPrint('❌ Error getAvailableSeatsCount: $e');
       return 0;
@@ -220,9 +223,9 @@ class EventSeatService {
   String _getCategory(String row, int number) {
     final rowCode = row.codeUnitAt(0);
     
-    if (rowCode >= 65 && rowCode <= 67) return 'vip';
-    if (rowCode >= 68 && rowCode <= 70) return 'gold';
-    if (rowCode >= 71 && rowCode <= 74) return 'family';
+    if (rowCode >= 65 && rowCode <= 67) return 'vip';      // A, B, C
+    if (rowCode >= 68 && rowCode <= 70) return 'gold';     // D, E, F
+    if (rowCode >= 71 && rowCode <= 74) return 'family';   // G, H, I, J
     return 'standard';
   }
 }
