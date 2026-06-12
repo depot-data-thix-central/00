@@ -13,7 +13,7 @@ class NewsService {
   String get currentUserId => _supabase.auth.currentUser?.id ?? '';
 
   // ============================================================
-  // LECTURE DES ARTICLES - VERSION SIMPLIFIÉE QUI FONCTIONNE
+  // LECTURE DES ARTICLES - VERSION CORRIGÉE
   // ============================================================
 
   Future<List<NewsArticle>> getArticles({
@@ -22,26 +22,38 @@ class NewsService {
     bool onlyPublished = true,
   }) async {
     try {
+      debugPrint('📰 getArticles: chargement des articles...');
+      
       // Récupérer tous les articles
       final response = await _supabase
           .from('news_articles')
           .select('*')
           .order('published_at', ascending: false);
       
-      // Filtrer en Dart (pas de soucis de version Supabase)
-      List<dynamic> results = response as List;
+      debugPrint('📰 getArticles: ${(response as List).length} articles bruts');
       
+      // Filtrer en Dart
+      List<dynamic> results = response;
+      
+      // ✅ CORRIGÉ: Filtrer sur 'status' (pas 'is_published')
       if (onlyPublished) {
         results = results.where((e) => e['status'] == 'published').toList();
-      }
-      if (category != null && category != 'featured') {
-        results = results.where((e) => e['category'] == category).toList();
-      }
-      if (category == 'featured') {
-        results = results.where((e) => e['is_featured'] == true).toList();
+        debugPrint('📰 getArticles: ${results.length} articles publiés');
       }
       
-      // Limiter le nombre
+      // Filtrer par catégorie
+      if (category != null && category.isNotEmpty && category != 'all' && category != 'featured') {
+        results = results.where((e) => e['category'] == category).toList();
+        debugPrint('📰 getArticles: ${results.length} articles dans catégorie $category');
+      }
+      
+      // Articles à la une
+      if (category == 'featured') {
+        results = results.where((e) => e['is_featured'] == true).toList();
+        debugPrint('📰 getArticles: ${results.length} articles à la une');
+      }
+      
+      // Limiter
       results = results.take(limit).toList();
       
       // Convertir en objets
@@ -57,6 +69,7 @@ class NewsService {
         }));
       }
       
+      debugPrint('✅ getArticles: ${articles.length} articles retournés');
       return articles;
     } catch (e) {
       debugPrint('❌ Error getArticles: $e');
@@ -64,8 +77,65 @@ class NewsService {
     }
   }
 
+  // ✅ NOUVELLE MÉTHODE: Récupérer l'article à la une
+  Future<NewsArticle?> getFeaturedArticle() async {
+    try {
+      final response = await _supabase
+          .from('news_articles')
+          .select('*')
+          .eq('is_featured', true)
+          .eq('status', 'published')
+          .order('published_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      
+      if (response == null) return null;
+      
+      final isLiked = await _isArticleLiked(response['id']);
+      final isSaved = await _isArticleSaved(response['id']);
+      
+      return NewsArticle.fromJson({
+        ...response,
+        'is_liked': isLiked,
+        'is_saved': isSaved,
+      });
+    } catch (e) {
+      debugPrint('❌ Error getFeaturedArticle: $e');
+      return null;
+    }
+  }
+
+  // ✅ NOUVELLE MÉTHODE: Récupérer les articles récents
+  Future<List<NewsArticle>> getRecentArticles({int limit = 10}) async {
+    try {
+      final response = await _supabase
+          .from('news_articles')
+          .select('*')
+          .eq('status', 'published')
+          .order('published_at', ascending: false)
+          .limit(limit);
+      
+      final articles = <NewsArticle>[];
+      for (var e in response as List) {
+        final isLiked = await _isArticleLiked(e['id']);
+        final isSaved = await _isArticleSaved(e['id']);
+        
+        articles.add(NewsArticle.fromJson({
+          ...e,
+          'is_liked': isLiked,
+          'is_saved': isSaved,
+        }));
+      }
+      
+      return articles;
+    } catch (e) {
+      debugPrint('❌ Error getRecentArticles: $e');
+      return [];
+    }
+  }
+
   // ============================================================
-  // AUTRES MÉTHODES (similaires, sans filtres complexes)
+  // AUTRES MÉTHODES
   // ============================================================
 
   Future<NewsArticle?> getArticleById(String articleId) async {
@@ -96,16 +166,17 @@ class NewsService {
     try {
       final response = await _supabase
           .from('news_articles')
-          .select('*');
+          .select('*')
+          .eq('is_breaking', true)
+          .eq('status', 'published')
+          .order('published_at', ascending: false)
+          .limit(20);
       
-      final List articles = response as List;
-      final filtered = articles.where((e) => 
-        e['is_breaking'] == true && e['status'] == 'published'
-      ).toList();
-      
-      filtered.sort((a, b) => b['published_at'].compareTo(a['published_at']));
-      
-      return filtered.take(20).map((e) => NewsArticle.fromJson(e)).toList();
+      final articles = <NewsArticle>[];
+      for (var e in response as List) {
+        articles.add(NewsArticle.fromJson(e));
+      }
+      return articles;
     } catch (e) {
       debugPrint('❌ Error getBreakingNews: $e');
       return [];
@@ -116,18 +187,17 @@ class NewsService {
     try {
       final response = await _supabase
           .from('news_articles')
-          .select('*');
+          .select('*')
+          .eq('status', 'published')
+          .not('video_url', 'is', null)
+          .order('published_at', ascending: false)
+          .limit(20);
       
-      final List articles = response as List;
-      final filtered = articles.where((e) => 
-        e['video_url'] != null && 
-        e['video_url'].toString().isNotEmpty && 
-        e['status'] == 'published'
-      ).toList();
-      
-      filtered.sort((a, b) => b['published_at'].compareTo(a['published_at']));
-      
-      return filtered.take(20).map((e) => NewsArticle.fromJson(e)).toList();
+      final articles = <NewsArticle>[];
+      for (var e in response as List) {
+        articles.add(NewsArticle.fromJson(e));
+      }
+      return articles;
     } catch (e) {
       debugPrint('❌ Error getVideos: $e');
       return [];
@@ -138,22 +208,13 @@ class NewsService {
     try {
       final response = await _supabase
           .from('news_articles')
-          .select('*');
+          .select('*')
+          .eq('status', 'published')
+          .or('title.ilike.%$query%,content.ilike.%$query%,summary.ilike.%$query%')
+          .order('published_at', ascending: false)
+          .limit(50);
       
-      final List articles = response as List;
-      final searchLower = query.toLowerCase();
-      
-      final filtered = articles.where((e) => 
-        e['status'] == 'published' && (
-          e['title'].toString().toLowerCase().contains(searchLower) ||
-          e['content'].toString().toLowerCase().contains(searchLower) ||
-          (e['summary'] ?? '').toString().toLowerCase().contains(searchLower)
-        )
-      ).toList();
-      
-      filtered.sort((a, b) => b['published_at'].compareTo(a['published_at']));
-      
-      return filtered.take(50).map((e) => NewsArticle.fromJson(e)).toList();
+      return (response as List).map((e) => NewsArticle.fromJson(e)).toList();
     } catch (e) {
       debugPrint('❌ Error searchArticles: $e');
       return [];
@@ -161,7 +222,7 @@ class NewsService {
   }
 
   // ============================================================
-  // INTERACTIONS (pas de changement)
+  // INTERACTIONS
   // ============================================================
 
   Future<void> incrementViews(String articleId) async {
@@ -314,6 +375,11 @@ class NewsService {
     final now = DateTime.now().toIso8601String();
     final publishDate = (publishedAt ?? DateTime.now()).toIso8601String();
 
+    debugPrint('📝 createArticle: Création de l\'article "$title"');
+    debugPrint('   - catégorie: $category');
+    debugPrint('   - isFeatured: $isFeatured');
+    debugPrint('   - isBreaking: $isBreaking');
+
     final response = await _supabase.from('news_articles').insert({
       'title': title,
       'summary': summary,
@@ -328,8 +394,10 @@ class NewsService {
       'created_at': now,
       'updated_at': now,
       'created_by': currentUserId,
+      'views_count': 0,
     }).select().single();
 
+    debugPrint('✅ createArticle: Article créé avec ID ${response['id']}');
     return NewsArticle.fromJson(response);
   }
 
@@ -400,6 +468,17 @@ class NewsService {
     } catch (e) {
       debugPrint('Error uploading video: $e');
       return null;
+    }
+  }
+
+  // ✅ NOUVELLE MÉTHODE: Vérifier la connexion
+  Future<bool> checkConnection() async {
+    try {
+      await _supabase.from('news_articles').select('id').limit(1);
+      return true;
+    } catch (e) {
+      debugPrint('❌ Connection check failed: $e');
+      return false;
     }
   }
 }
