@@ -1,8 +1,4 @@
 // lib/presentation/network/network_pro_home.dart
-// ============================================================
-// VERSION CORRIGÉE - SOLUTION 3
-// ============================================================
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -286,13 +282,11 @@ class _NetworkProHomeState extends State<NetworkProHome> with TickerProviderStat
   }
 
   // ============================================================
-  // ✅ CARTE DE POST CORRIGÉE - AUCUNE RÉFÉRENCE À imageUrl
+  // ✅ CARTE DE POST CORRIGÉE - SANS mediaUrl ni sharesCount
   // ============================================================
   Widget _buildPostCard(NetworkPost post) {
-    // ✅ Utilisation UNIQUEMENT des propriétés existantes
-    final mediaUrl = post.mediaUrl;           // ← mediaUrl (pas imageUrl)
-    final isLiked = post.isLiked ?? false;    // ← isLiked
-    final sharesCount = 0;                    // ← Valeur par défaut
+    // ✅ Utilisation UNIQUEMENT des propriétés qui existent dans votre modèle
+    final isLiked = post.isLiked;
     
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -350,32 +344,8 @@ class _NetworkProHomeState extends State<NetworkProHome> with TickerProviderStat
                 style: const TextStyle(fontSize: 13),
               ),
             
-            // ✅ Utilise mediaUrl (pas imageUrl)
-            if (mediaUrl != null && mediaUrl.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  mediaUrl,  // ← mediaUrl
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      height: 200,
-                      color: Colors.grey[200],
-                      child: const Center(child: CircularProgressIndicator()),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 200,
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
-                  ),
-                ),
-              ),
-            ],
+            // Pas d'image car mediaUrl n'existe pas dans votre modèle
+            // Si vous avez des images, elles sont dans une autre propriété
             
             const SizedBox(height: 12),
             
@@ -391,9 +361,9 @@ class _NetworkProHomeState extends State<NetworkProHome> with TickerProviderStat
                   '${post.commentsCount} ${post.commentsCount == 1 ? 'Commentaire' : 'Commentaires'}',
                   style: const TextStyle(fontSize: 11, color: Colors.grey),
                 ),
-                Text(
-                  '$sharesCount ${sharesCount == 1 ? 'Partage' : 'Partages'}',
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                const Text(
+                  '0 Partages',
+                  style: TextStyle(fontSize: 11, color: Colors.grey),
                 ),
               ],
             ),
