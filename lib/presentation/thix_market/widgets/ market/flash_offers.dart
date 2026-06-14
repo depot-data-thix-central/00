@@ -253,3 +253,136 @@ class _FlashOffersState extends State<FlashOffers> {
                       ),
                     ),
                   ),
+                ),
+                // Stock indicator
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 3,
+                    child: LinearProgressIndicator(
+                      value: (product['sold_percentage'] / 100),
+                      backgroundColor: Colors.grey[200],
+                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE5592F)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            // Infos
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product['title'],
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Text(
+                        '${product['price'].toInt()} FCFA',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFE5592F),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${product['original_price'].toInt()} FCFA',
+                        style: TextStyle(
+                          fontSize: 11,
+                          decoration: TextDecoration.lineThrough,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.inventory, size: 10, color: Colors.grey[500]),
+                      const SizedBox(width: 2),
+                      Text(
+                        'Stock: ${product['stock']}',
+                        style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${product['sold_percentage']}% vendu',
+                        style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingShimmer() {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 24,
+                      color: Colors.grey[200],
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 100,
+                      height: 20,
+                      color: Colors.grey[200],
+                    ),
+                  ],
+                ),
+                Container(
+                  width: 100,
+                  height: 24,
+                  color: Colors.grey[200],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 280,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: 4,
+              itemBuilder: (context, index) => Container(
+                width: 180,
+                margin: const EdgeInsets.only(right: 12),
+                color: Colors.grey[200],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
