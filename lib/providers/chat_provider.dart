@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import '../services/chat_service.dart';
 import '../models/chat_models.dart';
 
