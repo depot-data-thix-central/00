@@ -123,6 +123,7 @@ class EmergencyService {
 
 
   Future<bool> ensureLocationPermission() async {
+    if (kIsWeb) return false;
     try {
       final enabled = await Geolocator.isLocationServiceEnabled();
       if (!enabled) return false;
@@ -137,6 +138,7 @@ class EmergencyService {
   }
 
   Future<Position?> getCurrentPosition() async {
+    if (kIsWeb) return null;
     try {
       final ok = await ensureLocationPermission();
       if (!ok) return null;
@@ -368,6 +370,7 @@ class EmergencyService {
   }
 
   Future<bool> ensureMicrophonePermission() async {
+    if (kIsWeb) return false;
     try {
       return await _recorder.hasPermission();
     } catch (e) {
@@ -377,24 +380,16 @@ class EmergencyService {
   }
 
   Future<String?> startAudioEvidenceRecording({required String alertId}) async {
+    if (kIsWeb) return null;
     try {
       // We try on all platforms. If the plugin/permission isn't available, we fail gracefully.
       final canRecord = await ensureMicrophonePermission();
       if (!canRecord) return null;
 
-      // Web cannot always provide a writable filesystem path.
-      if (kIsWeb) {
-        _recordingPath = null;
-        final webPath = 'thix_emergency_${alertId}_${DateTime.now().millisecondsSinceEpoch}.m4a';
-        await _recorder.start(const RecordConfig(encoder: AudioEncoder.aacLc, bitRate: 128000, sampleRate: 44100), path: webPath);
-        await _insertAudit(action: 'start_recording', entityType: 'thix_emergency_alerts', entityId: alertId, metadata: {'platform': 'web'});
-        return null;
-      }
-
       final dir = await getTemporaryDirectory();
       final path = '${dir.path}/thix_emergency_${alertId}_${DateTime.now().millisecondsSinceEpoch}.m4a';
       _recordingPath = path;
-      await _recorder.start(const RecordConfig(encoder: AudioEncoder.aacLc, bitRate: 128000, sampleRate: 44100), path: path);
+      await _recorder.start(RecordConfig(encoder: AudioEncoder.aacLc, bitRate: 128000, sampleRate: 44100), path: path);
       await _insertAudit(action: 'start_recording', entityType: 'thix_emergency_alerts', entityId: alertId);
       return path;
     } catch (e) {
@@ -413,6 +408,7 @@ class EmergencyService {
   /// - This is **foreground-only**. Mobile OSes will stop recording in background.
   /// - Web recording is best-effort and may not produce a file path.
   Future<void> startLiveAudioStreaming({required String alertId, Duration chunkDuration = const Duration(seconds: 10)}) async {
+    if (kIsWeb) return;
     await stopLiveAudioStreaming();
     _audioStreamActive = true;
     unawaited(_audioStreamingLoop(alertId: alertId, chunkDuration: chunkDuration));

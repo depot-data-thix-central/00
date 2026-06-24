@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:thix_id/services/thix_money/split_payment_service.dart';
 import '../../providers/merchant_provider.dart';
-import '../../services/thix_money/split_payment_service.dart';
 
 class MerchantSplitRequestsScreen extends StatefulWidget {
   const MerchantSplitRequestsScreen({Key? key}) : super(key: key);
@@ -31,10 +31,13 @@ class _MerchantSplitRequestsScreenState extends State<MerchantSplitRequestsScree
   }
 
   Future<void> _confirmCompletion(String splitCode) async {
-    final success = await _splitService.markSplitAsCompleted(splitCode);
-    if (success) {
+    try {
+      await _splitService.markSplitAsCompleted(splitCode);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Paiement complété confirmé')));
       _loadPendingSplits();
+    } catch (e) {
+      debugPrint('MerchantSplitRequestsScreen: markSplitAsCompleted failed: $e');
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Échec de confirmation du paiement')));
     }
   }
 

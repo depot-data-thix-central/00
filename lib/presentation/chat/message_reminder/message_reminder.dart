@@ -2,12 +2,14 @@
 // Permet de programmer un rappel sur un message (ex: "me rappeler dans 1h")
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class MessageReminder {
   static final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
 
   static Future<void> init() async {
+    if (kIsWeb) return;
     const AndroidInitializationSettings android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings ios = DarwinInitializationSettings();
     const InitializationSettings settings = InitializationSettings(android: android, iOS: ios);
@@ -20,6 +22,7 @@ class MessageReminder {
     required String messagePreview,
     required DateTime remindAt,
   }) async {
+    if (kIsWeb) return;
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'reminder_channel',
       'Rappels de messages',
@@ -36,10 +39,19 @@ class MessageReminder {
   }
 
   static Future<void> cancelReminder(String messageId) async {
+    if (kIsWeb) return;
     await _notifications.cancel(messageId.hashCode);
   }
 
   static Future<void> showReminderPicker(BuildContext context, String messageId, String conversationId, String messagePreview) async {
+    if (kIsWeb) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Rappels locaux indisponibles sur Web')),
+        );
+      }
+      return;
+    }
     final DateTime? selectedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now().add(const Duration(hours: 1)),
