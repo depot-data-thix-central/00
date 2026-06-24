@@ -35,19 +35,40 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   path_provider: ^2.1.4
   
-  # Media & files (web-compatible versions only)
+  # Media & files
   video_player: ^2.9.2
   image_picker: ^1.0.5
   file_picker: ^8.1.2
+  record: ^5.1.2
   audioplayers: ^5.2.0
   printing: ^5.13.0
   pdf: ^3.11.0
+  
+  # Agora calls
+  agora_rtc_engine: ^6.3.0
+  
+  # Location & NFC
+  geolocator: ^13.0.4
+  nfc_manager: ^4.0.0
+  
+  # QR / Barcode
+  mobile_scanner: ^7.0.0
+  qr_flutter: ^4.1.0
+  barcode_widget: ^2.0.0
+  
+  # Notifications & permissions
+  flutter_local_notifications: ^20.0.0
+  permission_handler: ^12.0.0
   
   # Sharing & encryption
   share_plus: ^10.0.0
   crypto: ^3.0.0
   encrypt: ^5.0.3
   url_launcher: ^6.3.0
+  
+  # Contacts & biometrics
+  contacts_service: ^0.6.3
+  local_auth: ^2.1.7
   
   # JWT decoding
   jwt_decoder: ^2.0.0
@@ -82,13 +103,16 @@ dependencies:
   # Cartes Google
   google_maps_flutter: ^2.13.0
   
+  # Firebase Cloud Messaging (notifications push)
+  firebase_messaging: ^15.2.0
+  
   # Compression d'images
   flutter_image_compress: ^2.4.0
   
   # Export CSV
   csv: ^6.0.0
   
-  # Pour les imports Excel/CSV
+  # Pour les imports Excel/CSV (optionnel)
   excel: ^4.0.6
 
 dev_dependencies:
