@@ -17,6 +17,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      BASE_HREF: /00/
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,7 +35,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Web
-        run: flutter build web --release --base-href /00/
+        run: flutter build web --release --base-href "${BASE_HREF}"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
