@@ -1,64 +1,33 @@
 // lib/presentation/chat/voice/speed_control_widget.dart
+// Contrôle de vitesse de lecture (0.5x, 1x, 1.5x, 2x)
+
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
 class SpeedControlWidget extends StatelessWidget {
+  final AudioPlayer player;
   final double currentSpeed;
-  final Function(double) onSpeedChanged;
 
   const SpeedControlWidget({
-    super.key,
+    Key? key,
+    required this.player,
     required this.currentSpeed,
-    required this.onSpeedChanged,
-  });
-
-  final List<Map<String, dynamic>> _speeds = const [
-    {'label': '0.5x', 'value': 0.5},
-    {'label': '0.75x', 'value': 0.75},
-    {'label': '1x', 'value': 1.0},
-    {'label': '1.25x', 'value': 1.25},
-    {'label': '1.5x', 'value': 1.5},
-    {'label': '1.75x', 'value': 1.75},
-    {'label': '2x', 'value': 2.0},
-  ];
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        children: [
-          const Text(
-            'Vitesse de lecture',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _speeds.map((speed) {
-              final isSelected = currentSpeed == speed['value'];
-              return GestureDetector(
-                onTap: () => onSpeedChanged(speed['value']),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFD4AF37) : Colors.grey[200],
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    speed['label'],
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: isSelected ? Colors.white : Colors.grey[700],
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+    final speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+    return PopupMenuButton<double>(
+      icon: const Icon(Icons.speed),
+      tooltip: 'Vitesse de lecture',
+      initialValue: currentSpeed,
+      onSelected: (speed) => player.setPlaybackRate(speed),
+      itemBuilder: (context) => speeds.map((speed) {
+        return PopupMenuItem(
+          value: speed,
+          child: Text('${speed}x'),
+        );
+      }).toList(),
     );
   }
 }

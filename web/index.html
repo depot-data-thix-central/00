@@ -40,6 +40,19 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' 'unsafe-eval';">
 </head>
 <body>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var redirectPath = params.get('p');
+      if (!redirectPath) {
+        return;
+      }
+
+      var redirectQuery = params.get('q') || '';
+      var restoredUrl = redirectPath + redirectQuery + window.location.hash;
+      window.history.replaceState(null, '', restoredUrl);
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

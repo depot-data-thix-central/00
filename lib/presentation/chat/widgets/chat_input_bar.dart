@@ -1,191 +1,83 @@
 // lib/presentation/chat/widgets/chat_input_bar.dart
 import 'package:flutter/material.dart';
-import 'package:record/record.dart';
 
 class ChatInputBar extends StatefulWidget {
-  final Function(String) onSendMessage;
-  final Function() onSendImage;
-  final Function() onSendFile;
-  final Function() onStartRecording;
-  final Function() onStopRecording;
-  final Function(String) onTyping;
+  final TextEditingController controller;
+  final ValueChanged<String> onSendText;
+  final ValueChanged<String> onSendVoice;
+  final ValueChanged<dynamic> onAttachment;
+  final VoidCallback onEphemeral;
+  final VoidCallback onConfidential;
 
   const ChatInputBar({
-    super.key,
-    required this.onSendMessage,
-    required this.onSendImage,
-    required this.onSendFile,
-    required this.onStartRecording,
-    required this.onStopRecording,
-    required this.onTyping,
-  });
+    Key? key,
+    required this.controller,
+    required this.onSendText,
+    required this.onSendVoice,
+    required this.onAttachment,
+    required this.onEphemeral,
+    required this.onConfidential,
+  }) : super(key: key);
 
   @override
   State<ChatInputBar> createState() => _ChatInputBarState();
 }
 
 class _ChatInputBarState extends State<ChatInputBar> {
-  final TextEditingController _controller = TextEditingController();
-  final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isRecording = false;
-  Timer? _typingTimer;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _typingTimer?.cancel();
-    super.dispose();
-  }
-
-  void _onTyping() {
-    widget.onTyping(_controller.text);
-    _typingTimer?.cancel();
-    _typingTimer = Timer(const Duration(seconds: 2), () {
-      widget.onTyping('');
-    });
-  }
-
-  void _sendMessage() {
-    final text = _controller.text.trim();
-    if (text.isNotEmpty) {
-      widget.onSendMessage(text);
-      _controller.clear();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 4,
-          ),
-        ],
+        color: Theme.of(context).cardColor,
+        boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 2)],
       ),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.attach_file, size: 20, color: Colors.grey),
-            onPressed: () => _showAttachmentMenu(),
-          ),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      onChanged: (_) => _onTyping(),
-                      decoration: const InputDecoration(
-                        hintText: 'Tapez un message...',
-                        hintStyle: TextStyle(fontSize: 12),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 8),
-                      ),
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      _isRecording ? Icons.stop : Icons.mic,
-                      size: 20,
-                      color: Colors.grey,
-                    ),
-                    onPressed: _isRecording ? _stopRecording : _startRecording,
-                  ),
-                ],
-              ),
-            ),
+            icon: const Icon(Icons.attach_file, size: 22),
+            onPressed: () => widget.onAttachment(null),
           ),
           IconButton(
-            icon: const Icon(Icons.send, size: 20, color: Color(0xFFD4AF37)),
-            onPressed: _sendMessage,
+            icon: const Icon(Icons.timer_outlined, size: 22),
+            onPressed: widget.onEphemeral,
           ),
-        ],
-      ),
-    );
-  }
-
-  void _showAttachmentMenu() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+          IconButton(
+            icon: const Icon(Icons.lock_outline, size: 22),
+            onPressed: widget.onConfidential,
+          ),
+          Expanded(
+            child: TextField(
+              controller: widget.controller,
+              decoration: const InputDecoration(
+                hintText: 'Tapez un message...',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 8),
               ),
+              onSubmitted: widget.onSendText,
             ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _attachmentItem(Icons.image, 'Image', widget.onSendImage),
-                _attachmentItem(Icons.insert_drive_file, 'Document', widget.onSendFile),
-                _attachmentItem(Icons.location_on, 'Position', () {}),
-                _attachmentItem(Icons.contact_page, 'Contact', () {}),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _attachmentItem(IconData icon, String label, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pop(context);
-        onTap();
-      },
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 20, color: Colors.grey[700]),
           ),
-          const SizedBox(height: 8),
-          Text(label, style: const TextStyle(fontSize: 11)),
+          if (!_isRecording)
+            IconButton(
+              icon: const Icon(Icons.send, size: 22),
+              onPressed: () => widget.onSendText(widget.controller.text),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.stop, size: 22, color: Colors.red),
+              onPressed: () {
+                setState(() => _isRecording = false);
+                widget.onSendVoice('/temp/voice.opus');
+              },
+            ),
+          IconButton(
+            icon: Icon(_isRecording ? Icons.mic_off : Icons.mic, size: 22),
+            onPressed: () => setState(() => _isRecording = !_isRecording),
+          ),
         ],
       ),
     );
-  }
-
-  Future<void> _startRecording() async {
-    if (await _audioRecorder.hasPermission()) {
-      await _audioRecorder.start();
-      setState(() => _isRecording = true);
-      widget.onStartRecording();
-    }
-  }
-
-  Future<void> _stopRecording() async {
-    final path = await _audioRecorder.stop();
-    setState(() => _isRecording = false);
-    if (path != null) {
-      widget.onStopRecording();
-    }
   }
 }

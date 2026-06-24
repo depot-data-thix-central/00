@@ -1,104 +1,66 @@
 // lib/presentation/chat/polls/poll_results_widget.dart
+// Affichage des résultats d'un sondage (barres de pourcentage)
+
 import 'package:flutter/material.dart';
-import '../../../models/poll_models.dart';
 
 class PollResultsWidget extends StatelessWidget {
-  final Poll poll;
+  final String question;
+  final Map<String, int> votes; // option -> nombre de votes
+  final int totalVotes;
+  final bool isAnonymous;
 
-  const PollResultsWidget({super.key, required this.poll});
+  const PollResultsWidget({
+    Key? key,
+    required this.question,
+    required this.votes,
+    required this.totalVotes,
+    this.isAnonymous = false,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Question
-          Row(
-            children: [
-              const Icon(Icons.poll, size: 16, color: Color(0xFFD4AF37)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  poll.question,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(question, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(height: 12),
+            ...votes.entries.map((entry) {
+              final percentage = totalVotes > 0 ? (entry.value / totalVotes) * 100 : 0.0;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(entry.key, style: const TextStyle(fontSize: 12)),
+                        Text('${percentage.toStringAsFixed(1)}% (${entry.value})',
+                            style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    LinearProgressIndicator(
+                      value: percentage / 100,
+                      backgroundColor: Colors.grey[200],
+                      color: Colors.blue,
+                      minHeight: 6,
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Résultats par option
-          ...poll.options.asMap().entries.map((entry) {
-            final index = entry.key;
-            final option = entry.value;
-            final percentage = poll.getPercentage(index);
-            final votes = poll.getVotesCount(index);
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          option,
-                          style: const TextStyle(fontSize: 12),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$votes (${percentage.toStringAsFixed(0)}%)',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  LinearProgressIndicator(
-                    value: percentage / 100,
-                    backgroundColor: Colors.grey[200],
-                    color: _getColorForOption(index),
-                    minHeight: 6,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ],
-              ),
-            );
-          }),
-          const SizedBox(height: 12),
-          // Stats
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total: ${poll.totalVotes} vote(s)',
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              ),
-              if (poll.isExpired)
-                const Text(
-                  'Sondage terminé',
-                  style: TextStyle(fontSize: 10, color: Colors.red),
-                ),
-            ],
-          ),
-        ],
+              );
+            }),
+            const SizedBox(height: 8),
+            if (isAnonymous)
+              const Text('Votes anonymes', style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic)),
+            Text('Total : $totalVotes vote(s)', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+          ],
+        ),
       ),
     );
-  }
-
-  Color _getColorForOption(int index) {
-    const colors = [Color(0xFFD4AF37), Color(0xFFE67E22), Colors.blue, Colors.green, Colors.purple];
-    return colors[index % colors.length];
   }
 }

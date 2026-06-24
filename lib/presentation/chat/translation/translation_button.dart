@@ -1,102 +1,43 @@
 // lib/presentation/chat/translation/translation_button.dart
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+// Bouton de traduction placé à côté d'un message (dans la bulle ou dans le menu)
 
-import '../../../providers/translation_provider.dart';
+import 'package:flutter/material.dart';
 
 class TranslationButton extends StatelessWidget {
-  final String messageId;
-  final String originalText;
-  final String originalLanguage;
-  final VoidCallback onTranslated;
+  final VoidCallback onTap;
+  final bool isTranslating;
 
   const TranslationButton({
-    super.key,
-    required this.messageId,
-    required this.originalText,
-    required this.originalLanguage,
-    required this.onTranslated,
-  });
+    Key? key,
+    required this.onTap,
+    this.isTranslating = false,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TranslationProvider>(context);
-    final isTranslated = provider.isTranslated(messageId);
-    final translatedText = provider.getTranslation(messageId);
-
-    if (isTranslated && translatedText != null) {
-      return GestureDetector(
-        onTap: () {
-          provider.removeTranslation(messageId);
-          onTranslated();
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.translate, size: 10, color: Colors.grey),
-              const SizedBox(width: 2),
-              const Text('Traduit', style: TextStyle(fontSize: 9, color: Colors.grey)),
-              const SizedBox(width: 2),
-              Icon(Icons.close, size: 8, color: Colors.grey),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return GestureDetector(
-      onTap: () async {
-        final targetLang = provider.targetLanguage;
-        final translated = await provider.translateMessage(
-          messageId: messageId,
-          text: originalText,
-          sourceLang: originalLanguage,
-          targetLang: targetLang,
-        );
-        if (translated != null) {
-          onTranslated();
-        }
-      },
+    return InkWell(
+      onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFFD4AF37).withOpacity(0.1),
-          borderRadius: BorderRadius.circular(4),
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.translate, size: 10, color: Color(0xFFD4AF37)),
-            const SizedBox(width: 2),
-            Text(
-              'Traduire en ${_getLanguageName(provider.targetLanguage)}',
-              style: const TextStyle(fontSize: 9, color: Color(0xFFD4AF37)),
-            ),
-          ],
-        ),
+        child: isTranslating
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.translate, size: 14),
+                  SizedBox(width: 4),
+                  Text('Traduire', style: TextStyle(fontSize: 11)),
+                ],
+              ),
       ),
     );
-  }
-
-  String _getLanguageName(String code) {
-    const languages = {
-      'fr': 'Français',
-      'en': 'Anglais',
-      'ar': 'Arabe',
-      'es': 'Espagnol',
-      'de': 'Allemand',
-      'it': 'Italien',
-      'pt': 'Portugais',
-      'ru': 'Russe',
-      'zh': 'Chinois',
-      'ja': 'Japonais',
-    };
-    return languages[code] ?? code;
   }
 }

@@ -187,6 +187,8 @@ class _HomePagePremiumState extends State<HomePagePremium>
 
   static final RegExp _uidLikeRegex = RegExp(r'^[A-Za-z0-9_-]{20,}$');
 
+  final GlobalKey _servicesGridKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -203,7 +205,7 @@ class _HomePagePremiumState extends State<HomePagePremium>
     super.dispose();
   }
 
-  /// ✅ Navigation vers les MESSAGES (route principale THIX ID)
+  /// Navigation vers les MESSAGES (route principale THIX CHAT)
   void _navigateToMessages() {
     final auth = context.read<AuthController>();
     if (auth.isAuthenticated) {
@@ -213,7 +215,7 @@ class _HomePagePremiumState extends State<HomePagePremium>
     }
   }
 
-  /// ✅ Navigation vers le PROFIL (route principale THIX ID)
+  /// Navigation vers le PROFIL
   void _navigateToProfile() {
     final auth = context.read<AuthController>();
     if (auth.isAuthenticated) {
@@ -232,58 +234,23 @@ class _HomePagePremiumState extends State<HomePagePremium>
     context.push(AppRoutes.networkPro);
   }
 
-  // ✅ CORRIGÉ: Navigation vers THIX INFO avec retry logic
   void _navigateToThixInfo() async {
-    try {
-      debugPrint('📘 [THIX INFO] Tentative de navigation vers: ${AppRoutes.thixInfo}');
-      await context.push(AppRoutes.thixInfo);
-      debugPrint('✅ [THIX INFO] Navigation réussie');
-    } catch (e) {
-      debugPrint('❌ [THIX INFO] Erreur 1: $e');
-      // Retry avec route directe
-      try {
-        await context.push('/thix-info');
-        debugPrint('✅ [THIX INFO] Navigation réussie (retry)');
-      } catch (e2) {
-        debugPrint('❌ [THIX INFO] Erreur 2 (retry): $e2');
-        if (mounted) {
-          await FullScreenMessage.showError(
-            context,
-            title: 'Service temporairement indisponible',
-            message: 'THIX INFO sera disponible dans quelques instants. Veuillez réessayer.',
-          );
-        }
-      }
-    }
+    await context.push(AppRoutes.thixInfo);
   }
 
-  // ✅ CORRIGÉ: Navigation vers THIX ÉVÉNEMENT avec retry logic
   void _navigateToThixEvent() async {
-    try {
-      debugPrint('📅 [THIX ÉVÉNEMENT] Tentative de navigation vers: ${AppRoutes.thixEvent}');
-      await context.push(AppRoutes.thixEvent);
-      debugPrint('✅ [THIX ÉVÉNEMENT] Navigation réussie');
-    } catch (e) {
-      debugPrint('❌ [THIX ÉVÉNEMENT] Erreur 1: $e');
-      // Retry avec route directe
-      try {
-        await context.push('/thix-event');
-        debugPrint('✅ [THIX ÉVÉNEMENT] Navigation réussie (retry)');
-      } catch (e2) {
-        debugPrint('❌ [THIX ÉVÉNEMENT] Erreur 2 (retry): $e2');
-        if (mounted) {
-          await FullScreenMessage.showError(
-            context,
-            title: 'Service temporairement indisponible',
-            message: 'THIX ÉVÉNEMENT sera disponible dans quelques instants. Veuillez réessayer.',
-          );
-        }
-      }
-    }
+    await context.push(AppRoutes.thixEvent);
   }
 
   void _showEmergencyOverlay() async {
     await EmergencyOverlay.show(context);
+  }
+
+  void _scrollToServices() {
+    final context = _servicesGridKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(context, duration: const Duration(milliseconds: 500));
+    }
   }
 
   Future<void> _handleHomeSearchVerify() async {
@@ -493,7 +460,7 @@ class _HomePagePremiumState extends State<HomePagePremium>
                           ),
                         ),
                         GestureDetector(
-                          onTap: () {},
+                          onTap: _scrollToServices,
                           child: const Text(
                             'Tout voir',
                             style: TextStyle(
@@ -516,6 +483,7 @@ class _HomePagePremiumState extends State<HomePagePremium>
                       builder: (context, snap) {
                         final counts = snap.data ?? SectionBadgeCounts.zero;
                         return GridView.count(
+                          key: _servicesGridKey,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           crossAxisCount: 4,
@@ -566,7 +534,7 @@ class _HomePagePremiumState extends State<HomePagePremium>
                               badgeCount: counts.info,
                               onTap: _navigateToThixInfo,
                             ),
-                            // ✅ THIX ÉVÉNEMENT (UNIQUE)
+                            // THIX ÉVÉNEMENT
                             _ServiceCard(
                               icon: Icons.event_rounded,
                               title: 'THIX ÉVÉNEMENT',
@@ -583,7 +551,6 @@ class _HomePagePremiumState extends State<HomePagePremium>
                               iconColor: const Color(0xFFD4AF37),
                               onTap: () => context.push(AppRoutes.opportunities),
                             ),
-                            // ✅ ANCIENNE CARTE "Événements" SUPPRIMÉE
                             // Réseau Pro
                             _ServiceCard(
                               icon: Icons.groups_rounded,
@@ -634,7 +601,7 @@ class _HomePagePremiumState extends State<HomePagePremium>
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   sliver: SliverToBoxAdapter(
-                    child: _MissionBanner(),
+                    child: _MissionBanner(onCreateAccount: () => _handleRequestAccount(context)),
                   ),
                 ),
               ],
@@ -671,6 +638,7 @@ class _HomePagePremiumState extends State<HomePagePremium>
         onChatTap: _navigateToMessages,
         onProfileTap: _navigateToProfile,
         onEmergencyTap: _showEmergencyOverlay,
+        onServicesTap: _scrollToServices,
       ),
     );
   }
@@ -818,14 +786,13 @@ class _PremiumHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-const SizedBox(height: 2),
-Text(
-  'Que voulez-vous faire aujourd\'hui ?',
-  style: TextStyle(
-    color: Colors.white.withOpacity(0.8),
-    fontSize: 11,
-  ),
-),
+              Text(
+                'Que voulez-vous faire aujourd\'hui ?',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 11,
+                ),
+              ),
             ],
           ),
         ),
@@ -1238,6 +1205,9 @@ class _ServiceCardState extends State<_ServiceCard>
 
 // ==================== BANNIÈRE DE MISSION ====================
 class _MissionBanner extends StatelessWidget {
+  final VoidCallback onCreateAccount;
+  const _MissionBanner({required this.onCreateAccount});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -1272,9 +1242,7 @@ class _MissionBanner extends StatelessWidget {
             children: [
               Expanded(
                 child: GestureDetector(
-                  onTap: () {
-                    // Gérer la création de compte
-                  },
+                  onTap: onCreateAccount,
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
@@ -1308,12 +1276,14 @@ class _FloatingBottomNav extends StatelessWidget {
   final VoidCallback onChatTap;
   final VoidCallback onProfileTap;
   final VoidCallback onEmergencyTap;
+  final VoidCallback onServicesTap;
 
   const _FloatingBottomNav({
     required this.onScanTap,
     required this.onChatTap,
     required this.onProfileTap,
     required this.onEmergencyTap,
+    required this.onServicesTap,
   });
 
   @override
@@ -1344,7 +1314,7 @@ class _FloatingBottomNav extends StatelessWidget {
             _NavButton(
               icon: Icons.apps_rounded,
               label: 'Services',
-              onTap: () {},
+              onTap: onServicesTap,
             ),
             FloatingActionButton(
               heroTag: 'emergency',
@@ -1398,4 +1368,3 @@ class _NavButton extends StatelessWidget {
     );
   }
 }
- 

@@ -1,55 +1,23 @@
 // lib/presentation/chat/widgets/chat_stats_row.dart
 import 'package:flutter/material.dart';
+import '../core/chat_models.dart';
 
 class ChatStatsRow extends StatelessWidget {
-  final int onlineCount;
-  final int newMessagesCount;
-  final int activeCallsCount;
-  final int securityAlertsCount;
+  final ChatStats stats;
 
-  const ChatStatsRow({
-    super.key,
-    required this.onlineCount,
-    required this.newMessagesCount,
-    required this.activeCallsCount,
-    required this.securityAlertsCount,
-  });
+  const ChatStatsRow({Key? key, required this.stats}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _StatItem(
-            count: onlineCount.toString(),
-            label: 'En ligne',
-            icon: Icons.circle,
-            color: Colors.green,
-            size: 8,
-          ),
-          _StatItem(
-            count: newMessagesCount.toString(),
-            label: 'Nouveaux messages',
-            icon: Icons.mark_email_unread,
-            color: const Color(0xFFD4AF37),
-            size: 12,
-          ),
-          _StatItem(
-            count: activeCallsCount.toString(),
-            label: 'Réunions actives',
-            icon: Icons.videocam,
-            color: Colors.blue,
-            size: 12,
-          ),
-          _StatItem(
-            count: securityAlertsCount.toString(),
-            label: 'Alertes sécurité',
-            icon: Icons.warning,
-            color: Colors.red,
-            size: 12,
-          ),
+          _StatItem('${stats.onlineCount}', 'En ligne', Icons.circle, Colors.green),
+          _StatItem('${stats.newMessagesCount}', 'Nouveaux messages', Icons.message_outlined, Colors.blue),
+          _StatItem('${stats.activeMeetingsCount}', 'Réunions actives', Icons.videocam_outlined, Colors.orange),
+          _StatItem('${stats.securityAlertsCount}', 'Alertes sécurité', Icons.security_outlined, Colors.red),
         ],
       ),
     );
@@ -57,39 +25,20 @@ class ChatStatsRow extends StatelessWidget {
 }
 
 class _StatItem extends StatelessWidget {
-  final String count;
+  final String value;
   final String label;
   final IconData icon;
   final Color color;
-  final double size;
-
-  const _StatItem({
-    required this.count,
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.size,
-  });
+  const _StatItem(this.value, this.label, this.icon, this.color);
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Icon(icon, size: size, color: color),
-        const SizedBox(width: 4),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              count,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              label,
-              style: TextStyle(fontSize: 9, color: Colors.grey[500]),
-            ),
-          ],
-        ),
+        Icon(icon, color: color, size: 20),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
       ],
     );
   }

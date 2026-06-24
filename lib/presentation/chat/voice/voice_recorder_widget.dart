@@ -1,93 +1,70 @@
 // lib/presentation/chat/voice/voice_recorder_widget.dart
+// Widget d'enregistrement vocal (avec visualisation du niveau sonore)
+
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io';
-import 'dart:async';
 
 class VoiceRecorderWidget extends StatefulWidget {
-  final Function(File audioFile, int duration) onRecordingComplete;
-  final VoidCallback? onCancel;
+  final Function(File recordingFile, int durationSeconds) onRecordingComplete;
 
-  const VoiceRecorderWidget({
-    super.key,
-    required this.onRecordingComplete,
-    this.onCancel,
-  });
+  const VoiceRecorderWidget({Key? key, required this.onRecordingComplete}) : super(key: key);
 
   @override
   State<VoiceRecorderWidget> createState() => _VoiceRecorderWidgetState();
 }
 
-class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget>
-    with SingleTickerProviderStateMixin {
-  late AudioRecorder _recorder;
-  late AnimationController _waveController;
-  Timer? _timer;
-  Duration _recordDuration = Duration.zero;
+class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
+  final AudioRecorder _recorder = AudioRecorder();
   bool _isRecording = false;
   bool _isPaused = false;
-  String? _recordingPath;
+  int _recordDuration = 0;
+  late String _filePath;
+  double _amplitude = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _recorder = AudioRecorder();
-    _waveController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    )..repeat(reverse: true);
+    _initRecorder();
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _waveController.dispose();
-    _recorder.dispose();
-    super.dispose();
+  Future<void> _initRecorder() async {
+    final hasPermission = await _recorder.hasPermission();
+    if (!hasPermission) return;
+    final dir = await getTemporaryDirectory();
+    _filePath = '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
   }
 
   Future<void> _startRecording() async {
-    if (!await _recorder.hasPermission()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Permission microphone refusée')),
-      );
-      return;
-    }
-
-    final directory = await getTemporaryDirectory();
-    final path = '${directory.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
-    _recordingPath = path;
-
-    await _recorder.start(const RecordConfig(), path: path);
-    
+    await _recorder.start(
+      const RecordConfig(encoder: AudioEncoder.aacLc),
+      path: _filePath,
+    );
     setState(() {
       _isRecording = true;
-      _recordDuration = Duration.zero;
+      _recordDuration = 0;
     });
-
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted && _isRecording && !_isPaused) {
-        setState(() {
-          _recordDuration = Duration(seconds: _recordDuration.inSeconds + 1);
-        });
-      }
-    });
+    _updateDuration();
+    _updateAmplitude();
   }
 
-  Future<void> _stopRecording() async {
-    if (_recordingPath != null) {
-      final path = await _recorder.stop();
-      _timer?.cancel();
-      setState(() => _isRecording = false);
-      
-      if (path != null && _recordDuration.inSeconds > 1) {
-        final file = File(path);
-        widget.onRecordingComplete(file, _recordDuration.inSeconds);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Message trop court')),
-        );
+  Future<void> _updateDuration() async {
+    while (_isRecording && !_isPaused) {
+      await Future.delayed(const Duration(seconds: 1));
+      final duration = await _recorder.getDuration();
+      if (mounted && duration != null) {
+        setState(() => _recordDuration = duration.inSeconds);
+      }
+    }
+  }
+
+  Future<void> _updateAmplitude() async {
+    while (_isRecording && !_isPaused) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      final amp = await _recorder.getAmplitude();
+      if (mounted) {
+        setState(() => _amplitude = amp.current);
       }
     }
   }
@@ -98,119 +75,60 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget>
   }
 
   Future<void> _resumeRecording() async {
-    await _resume();
+    await _recorder.resume();
     setState(() => _isPaused = false);
+    _updateDuration();
+    _updateAmplitude();
   }
 
-  Future<void> _cancelRecording() async {
-    _timer?.cancel();
-    await _recorder.stop();
-    if (_recordingPath != null) {
-      final file = File(_recordingPath!);
-      if (await file.exists()) {
-        await file.delete();
-      }
+  Future<void> _stopRecording() async {
+    final path = await _recorder.stop();
+    setState(() => _isRecording = false);
+    if (path != null && _recordDuration > 0) {
+      widget.onRecordingComplete(File(path), _recordDuration);
     }
-    setState(() {
-      _isRecording = false;
-      _recordDuration = Duration.zero;
-    });
-    widget.onCancel?.call();
-  }
-
-  String _formatDuration(Duration duration) {
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_isRecording) {
-      return GestureDetector(
-        onLongPress: _startRecording,
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(20),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          LinearProgressIndicator(
+            value: _amplitude / 100,
+            backgroundColor: Colors.grey[300],
+            color: Colors.red,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+          const SizedBox(height: 16),
+          Text(
+            '${_recordDuration ~/ 60}:${(_recordDuration % 60).toString().padLeft(2, '0')}',
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.mic, size: 18, color: Colors.grey),
-              const SizedBox(width: 4),
-              Text(
-                'Maintenir pour enregistrer',
-                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+              if (_isRecording && !_isPaused)
+                IconButton(
+                  icon: const Icon(Icons.pause, size: 48),
+                  onPressed: _pauseRecording,
+                ),
+              if (_isRecording && _isPaused)
+                IconButton(
+                  icon: const Icon(Icons.mic, size: 48, color: Colors.red),
+                  onPressed: _resumeRecording,
+                ),
+              IconButton(
+                icon: Icon(_isRecording ? Icons.stop : Icons.mic, size: 48),
+                onPressed: _isRecording ? _stopRecording : _startRecording,
               ),
             ],
           ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFD4AF37).withOpacity(0.15),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Animation vague
-          AnimatedBuilder(
-            animation: _waveController,
-            builder: (context, child) {
-              return Row(
-                children: List.generate(4, (index) {
-                  final height = 10 + (8 * _waveController.value) * (index + 1);
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    width: 3,
-                    height: height,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD4AF37),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  );
-                }),
-              );
-            },
-          ),
-          const SizedBox(width: 12),
-          Text(
-            _formatDuration(_recordDuration),
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(width: 12),
-          if (_isPaused)
-            IconButton(
-              icon: const Icon(Icons.play_arrow, size: 18),
-              onPressed: _resumeRecording,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.pause, size: 18),
-              onPressed: _pauseRecording,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          IconButton(
-            icon: const Icon(Icons.stop, size: 18, color: Colors.red),
-            onPressed: _stopRecording,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close, size: 18, color: Colors.grey),
-            onPressed: _cancelRecording,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
+          const SizedBox(height: 8),
+          const Text('Appuyez pour enregistrer', style: TextStyle(fontSize: 12)),
         ],
       ),
     );

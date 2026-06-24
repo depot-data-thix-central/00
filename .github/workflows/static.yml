@@ -30,7 +30,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Web
-        run: flutter build web --release --base-href /sona1/
+        run: flutter build web --release -t lib/main_web.dart --base-href /00/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

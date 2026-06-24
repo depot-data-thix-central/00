@@ -1,134 +1,89 @@
 // lib/presentation/chat/translation/auto_translate_settings.dart
+// Écran de paramètres pour la traduction automatique (globale ou par conversation)
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../../providers/translation_provider.dart';
-import 'language_selector_sheet.dart';
+class AutoTranslateSettings extends StatefulWidget {
+  final bool isAutoTranslateEnabled;
+  final String targetLanguageCode;
+  final Function(bool enabled, String languageCode) onSettingsChanged;
 
-class AutoTranslateSettings extends StatelessWidget {
-  const AutoTranslateSettings({super.key});
+  const AutoTranslateSettings({
+    Key? key,
+    required this.isAutoTranslateEnabled,
+    required this.targetLanguageCode,
+    required this.onSettingsChanged,
+  }) : super(key: key);
+
+  @override
+  State<AutoTranslateSettings> createState() => _AutoTranslateSettingsState();
+}
+
+class _AutoTranslateSettingsState extends State<AutoTranslateSettings> {
+  late bool _enabled;
+  late String _targetLanguage;
+
+  @override
+  void initState() {
+    super.initState();
+    _enabled = widget.isAutoTranslateEnabled;
+    _targetLanguage = widget.targetLanguageCode;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TranslationProvider>(context);
+    final languageNames = {
+      'fr': 'Français',
+      'en': 'Anglais',
+      'es': 'Espagnol',
+      'de': 'Allemand',
+      'it': 'Italien',
+      'pt': 'Portugais',
+      'ar': 'Arabe',
+      'zh': 'Chinois',
+      'ru': 'Russe',
+      'ja': 'Japonais',
+    };
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, size: 20, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Traduction automatique',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-      ),
+      appBar: AppBar(title: const Text('Traduction automatique')),
       body: ListView(
         children: [
-          // Activation
-          Container(
-            margin: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: SwitchListTile(
-              title: const Text('Traduction automatique', style: TextStyle(fontSize: 13)),
-              subtitle: const Text('Traduire automatiquement les messages reçus', style: TextStyle(fontSize: 10)),
-              value: provider.autoTranslate,
-              onChanged: (value) => provider.setAutoTranslate(value),
-              activeColor: const Color(0xFFD4AF37),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            ),
+          SwitchListTile(
+            title: const Text('Activer la traduction automatique'),
+            subtitle: const Text('Traduire automatiquement les messages dans votre langue'),
+            value: _enabled,
+            onChanged: (val) => setState(() => _enabled = val),
           ),
-
-          // Langue cible
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListTile(
-              title: const Text('Langue de traduction', style: TextStyle(fontSize: 13)),
-              subtitle: Text(
-                _getLanguageName(provider.targetLanguage),
-                style: const TextStyle(fontSize: 11, color: Color(0xFFD4AF37)),
-              ),
-              trailing: const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-              onTap: () {
-                showModalBottomSheet(
+          if (_enabled)
+            ListTile(
+              title: const Text('Langue cible'),
+              subtitle: Text(languageNames[_targetLanguage] ?? 'Français'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () async {
+                final newLang = await showDialog<String>(
                   context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => const LanguageSelectorSheet(),
+                  builder: (context) => LanguageSelectorSheet(
+                    currentLanguageCode: _targetLanguage,
+                    onLanguageSelected: (code) => Navigator.pop(context, code),
+                  ),
                 );
+                if (newLang != null) setState(() => _targetLanguage = newLang);
               },
             ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Langue source automatique
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: SwitchListTile(
-              title: const Text('Détection automatique', style: TextStyle(fontSize: 13)),
-              subtitle: const Text('Détecter automatiquement la langue source', style: TextStyle(fontSize: 10)),
-              value: provider.autoDetectLanguage,
-              onChanged: (value) => provider.setAutoDetectLanguage(value),
-              activeColor: const Color(0xFFD4AF37),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            ),
-          ),
-
-          // Traduction des messages sortants
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: SwitchListTile(
-              title: const Text('Traduire mes messages', style: TextStyle(fontSize: 13)),
-              subtitle: const Text('Envoyer automatiquement une traduction de vos messages', style: TextStyle(fontSize: 10)),
-              value: provider.translateOutgoing,
-              onChanged: (value) => provider.setTranslateOutgoing(value),
-              activeColor: const Color(0xFFD4AF37),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton(
+              onPressed: () {
+                widget.onSettingsChanged(_enabled, _targetLanguage);
+                Navigator.pop(context);
+              },
+              child: const Text('Enregistrer'),
             ),
           ),
         ],
       ),
     );
-  }
-
-  String _getLanguageName(String code) {
-    const languages = {
-      'fr': 'Français',
-      'en': 'Anglais',
-      'ar': 'Arabe',
-      'es': 'Espagnol',
-      'de': 'Allemand',
-      'it': 'Italien',
-      'pt': 'Portugais',
-      'ru': 'Russe',
-      'zh': 'Chinois',
-      'ja': 'Japonais',
-      'ko': 'Coréen',
-      'nl': 'Néerlandais',
-      'pl': 'Polonais',
-      'tr': 'Turc',
-      'vi': 'Vietnamien',
-      'th': 'Thaï',
-    };
-    return languages[code] ?? code;
   }
 }

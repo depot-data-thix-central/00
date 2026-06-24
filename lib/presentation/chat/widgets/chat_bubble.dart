@@ -1,162 +1,151 @@
 // lib/presentation/chat/widgets/chat_bubble.dart
 import 'package:flutter/material.dart';
-import '../../models/chat_models.dart';
+import '../core/chat_models.dart';
+import '../core/chat_constants.dart';
 
 class ChatBubble extends StatelessWidget {
-  final ChatMessage message;
-  final VoidCallback onLongPress;
+  final Message message;
+  final bool isMe;
   final VoidCallback? onReactionTap;
+  final VoidCallback? onConfidentialTap;
 
   const ChatBubble({
-    super.key,
+    Key? key,
     required this.message,
-    required this.onLongPress,
+    required this.isMe,
     this.onReactionTap,
-  });
+    this.onConfidentialTap,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final isMe = message.isFromMe;
+    final isConfidential = message.type == ChatConstants.messageTypeConfidential;
+    final isEphemeral = message.type == ChatConstants.messageTypeEphemeral;
+    final isVoice = message.type == ChatConstants.messageTypeVoice;
 
     return GestureDetector(
-      onLongPress: onLongPress,
-      child: Container(
-        margin: EdgeInsets.only(
-          left: isMe ? 60 : 0,
-          right: isMe ? 0 : 60,
-          bottom: 8,
+      onLongPress: onReactionTap,
+      child: Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
+          decoration: BoxDecoration(
+            color: isMe ? Colors.blue[100] : Colors.grey[200],
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(16),
+              topRight: const Radius.circular(16),
+              bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
+              bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isConfidential)
+                _buildConfidentialContent()
+              else if (isEphemeral)
+                _buildEphemeralContent()
+              else if (isVoice)
+                _buildVoiceContent()
+              else
+                _buildTextContent(),
+              const SizedBox(height: 4),
+              _buildFooter(),
+            ],
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      ),
+    );
+  }
+
+  Widget _buildTextContent() {
+    return Text(
+      message.content ?? '',
+      style: const TextStyle(fontSize: 14),
+    );
+  }
+
+  Widget _buildConfidentialContent() {
+    return InkWell(
+      onTap: onConfidentialTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (!isMe && message.senderAvatar != null)
-                  CircleAvatar(
-                    radius: 12,
-                    backgroundImage: NetworkImage(message.senderAvatar!),
-                  ),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isMe ? const Color(0xFFD4AF37) : Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(16),
-                        topRight: const Radius.circular(16),
-                        bottomLeft: Radius.circular(isMe ? 16 : 4),
-                        bottomRight: Radius.circular(isMe ? 4 : 16),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
-                          blurRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: _buildContent(),
-                  ),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 4, left: 8, right: 8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    message.formattedTime,
-                    style: const TextStyle(fontSize: 9, color: Colors.grey),
-                  ),
-                  if (isMe && message.isRead) ...[
-                    const SizedBox(width: 4),
-                    const Icon(Icons.done_all, size: 10, color: Colors.green),
-                  ] else if (isMe && message.isDelivered) ...[
-                    const SizedBox(width: 4),
-                    const Icon(Icons.done, size: 10, color: Colors.grey),
-                  ],
-                ],
-              ),
-            ),
+            const Icon(Icons.lock_outline, size: 16, color: Colors.grey),
+            const SizedBox(width: 8),
+            const Text('Message confidentiel (appuyer pour ouvrir)',
+                style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
-    switch (message.type) {
-      case 'text':
-        return Text(
-          message.content,
-          style: TextStyle(
-            fontSize: 13,
-            color: message.isFromMe ? Colors.white : Colors.black87,
+  Widget _buildEphemeralContent() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.timer_outlined, size: 16, color: Colors.orange),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            message.content ?? 'Message éphémère',
+            style: const TextStyle(fontSize: 14),
           ),
-        );
-      case 'image':
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.network(
-            message.mediaUrl!,
-            width: 180,
-            fit: BoxFit.cover,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVoiceContent() {
+    return Row(
+      children: [
+        Icon(Icons.play_circle_outline, color: isMe ? Colors.blue[800] : Colors.grey[700]),
+        const SizedBox(width: 8),
+        Expanded(
+          child: LinearProgressIndicator(
+            value: 0.3, // À remplacer par un vrai contrôleur
+            backgroundColor: Colors.grey[300],
+            color: isMe ? Colors.blue : Colors.grey,
           ),
-        );
-      case 'audio':
-        return Row(
-          children: [
-            Icon(
-              Icons.play_circle,
-              size: 28,
-              color: const Color(0xFFD4AF37),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '${message.mediaDuration ?? 0} s',
-              style: const TextStyle(fontSize: 11),
-            ),
-          ],
-        );
-      case 'file':
-        return Container(
-          width: 180,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(8),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '${message.durationSeconds ?? 0}s',
+          style: const TextStyle(fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooter() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          _formatTime(message.sentAt),
+          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+        ),
+        if (message.reactions.isNotEmpty) ...[
+          const SizedBox(width: 8),
+          Row(
+            children: message.reactions.map((r) => Padding(
+              padding: const EdgeInsets.only(right: 2),
+              child: Text(r, style: const TextStyle(fontSize: 12)),
+            )).toList(),
           ),
-          child: Row(
-            children: [
-              const Icon(Icons.insert_drive_file, size: 20, color: Colors.grey),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      message.fileName ?? 'Fichier',
-                      style: const TextStyle(fontSize: 11),
-                      maxLines: 1,
-                    ),
-                    Text(
-                      '${(message.fileSize ?? 0) / 1024} KB',
-                      style: const TextStyle(fontSize: 9, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      default:
-        return const SizedBox.shrink();
-    }
+        ],
+      ],
+    );
+  }
+
+  String _formatTime(DateTime time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 }

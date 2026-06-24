@@ -1,59 +1,51 @@
 // lib/presentation/chat/widgets/pinned_message.dart
 import 'package:flutter/material.dart';
-import '../../models/chat_models.dart';
+import '../core/chat_models.dart';
 
 class PinnedMessage extends StatelessWidget {
-  final ChatMessage message;
+  final Message message;
   final VoidCallback onTap;
 
   const PinnedMessage({
-    super.key,
+    Key? key,
     required this.message,
     required this.onTap,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFD4AF37).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: const Border(
-          left: BorderSide(color: Color(0xFFD4AF37), width: 3),
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
         ),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.push_pin, size: 14, color: Color(0xFFD4AF37)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Message épinglé',
-                  style: TextStyle(fontSize: 9, color: Color(0xFFD4AF37)),
-                ),
-                Text(
-                  message.content,
-                  style: const TextStyle(fontSize: 11),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+        child: Row(
+          children: [
+            const Icon(Icons.push_pin, size: 16, color: Colors.grey),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Message épinglé',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    message.content ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
             ),
-          ),
-          GestureDetector(
-            onTap: onTap,
-            child: const Icon(
-              Icons.arrow_downward,
-              size: 14,
-              color: Colors.grey,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

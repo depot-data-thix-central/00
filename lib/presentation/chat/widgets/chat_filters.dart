@@ -2,60 +2,34 @@
 import 'package:flutter/material.dart';
 
 class ChatFilters extends StatelessWidget {
-  final List<Map<String, dynamic>> filters;
-  final int selectedIndex;
-  final Function(int, String?) onFilterSelected;
+  final String selectedFilter;
+  final ValueChanged<String> onFilterSelected;
 
   const ChatFilters({
-    super.key,
-    required this.filters,
-    required this.selectedIndex,
+    Key? key,
+    required this.selectedFilter,
     required this.onFilterSelected,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      height: 32,
+    const filters = ['Tous', 'Équipes', 'Appels', 'Favoris', 'Rendez-vous'];
+    return SizedBox(
+      height: 40,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         itemCount: filters.length,
         itemBuilder: (context, index) {
           final filter = filters[index];
-          final isSelected = selectedIndex == index;
-          return GestureDetector(
-            onTap: () => onFilterSelected(index, filter['value']),
-            child: Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFD4AF37) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isSelected ? const Color(0xFFD4AF37) : Colors.grey[300]!,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    filter['icon'] as IconData,
-                    size: 12,
-                    color: isSelected ? Colors.white : Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    filter['name'] as String,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: isSelected ? Colors.white : Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: FilterChip(
+              label: Text(filter),
+              selected: selectedFilter == filter,
+              onSelected: (_) => onFilterSelected(filter),
+              labelStyle: const TextStyle(fontSize: 12),
+              selectedColor: Colors.blue.shade100,
             ),
           );
         },

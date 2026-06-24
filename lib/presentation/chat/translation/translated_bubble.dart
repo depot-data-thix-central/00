@@ -1,106 +1,84 @@
 // lib/presentation/chat/translation/translated_bubble.dart
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+// Bulle de message avec traduction affichée (original + traduit)
 
-import '../../../providers/translation_provider.dart';
+import 'package:flutter/material.dart';
 
 class TranslatedBubble extends StatelessWidget {
-  final String messageId;
   final String originalText;
-  final String originalLanguage;
-  final bool isFromMe;
-  final Widget child;
+  final String translatedText;
+  final bool isMe;
+  final DateTime sentAt;
+  final VoidCallback onTranslateAgain;
 
   const TranslatedBubble({
-    super.key,
-    required this.messageId,
+    Key? key,
     required this.originalText,
-    required this.originalLanguage,
-    required this.isFromMe,
-    required this.child,
-  });
+    required this.translatedText,
+    required this.isMe,
+    required this.sentAt,
+    required this.onTranslateAgain,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TranslationProvider>(context);
-    final isTranslated = provider.isTranslated(messageId);
-    final translatedText = provider.getTranslation(messageId);
-    final targetLang = provider.targetLanguage;
-    final autoTranslate = provider.autoTranslate;
-
-    // Auto-traduction si activée
-    if (autoTranslate && !isTranslated && originalLanguage != targetLang) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        provider.translateMessage(
-          messageId: messageId,
-          text: originalText,
-          sourceLang: originalLanguage,
-          targetLang: targetLang,
-        );
-      });
-    }
-
-    return Column(
-      crossAxisAlignment: isFromMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      children: [
-        child,
-        if (isTranslated && translatedText != null) ...[
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: isFromMe
-                  ? const Color(0xFFD4AF37).withOpacity(0.15)
-                  : Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isFromMe
-                    ? const Color(0xFFD4AF37).withOpacity(0.3)
-                    : Colors.grey[200]!,
-              ),
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
+        decoration: BoxDecoration(
+          color: isMe ? Colors.blue[100] : Colors.grey[200],
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
+            bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Texte original (en petit grisé)
+            Text(
+              originalText,
+              style: TextStyle(fontSize: 12, color: Colors.grey[700], fontStyle: FontStyle.italic),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const Divider(height: 8, thickness: 0.5),
+            // Texte traduit
+            Text(
+              translatedText,
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.translate, size: 10, color: Color(0xFFD4AF37)),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Traduit en ${_getLanguageName(targetLang)}',
-                      style: const TextStyle(fontSize: 8, color: Color(0xFFD4AF37)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
                 Text(
-                  translatedText,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isFromMe ? Colors.white70 : Colors.grey[700],
+                  _formatTime(sentAt),
+                  style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                ),
+                InkWell(
+                  onTap: onTranslateAgain,
+                  child: const Row(
+                    children: [
+                      Icon(Icons.refresh, size: 12),
+                      SizedBox(width: 4),
+                      Text('Relire', style: TextStyle(fontSize: 10)),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-        ],
-      ],
+          ],
+        ),
+      ),
     );
   }
 
-  String _getLanguageName(String code) {
-    const languages = {
-      'fr': 'Français',
-      'en': 'Anglais',
-      'ar': 'Arabe',
-      'es': 'Espagnol',
-      'de': 'Allemand',
-      'it': 'Italien',
-      'pt': 'Portugais',
-      'ru': 'Russe',
-      'zh': 'Chinois',
-      'ja': 'Japonais',
-    };
-    return languages[code] ?? code;
+  String _formatTime(DateTime time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 }

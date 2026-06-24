@@ -1,130 +1,64 @@
 // lib/presentation/chat/read_receipts/read_receipts_view.dart
+// Affiche la liste des participants ayant lu un message donné
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
-import '../../../providers/read_receipt_provider.dart';
-import 'read_by_list.dart';
-
-class ReadReceiptsView extends StatefulWidget {
-  final String messageId;
-  final String messageContent;
+class ReadReceiptsView extends StatelessWidget {
+  final List<ReadReceiptUser> readers;
+  final int totalParticipants;
 
   const ReadReceiptsView({
-    super.key,
-    required this.messageId,
-    required this.messageContent,
-  });
-
-  @override
-  State<ReadReceiptsView> createState() => _ReadReceiptsViewState();
-}
-
-class _ReadReceiptsViewState extends State<ReadReceiptsView>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    final provider = Provider.of<ReadReceiptProvider>(context, listen: false);
-    await provider.loadReceipts(widget.messageId);
-    setState(() => _isLoading = false);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+    Key? key,
+    required this.readers,
+    required this.totalParticipants,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<ReadReceiptProvider>(context);
-    final delivered = provider.deliveredUsers;
-    final read = provider.readUsers;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    return Scaffold(
+      appBar: AppBar(title: const Text('Vus par')),
+      body: ListView.builder(
+        itemCount: readers.length,
+        itemBuilder: (context, index) {
+          final user = readers[index];
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundImage: user.avatarUrl != null
+                  ? CachedNetworkImageProvider(user.avatarUrl!)
+                  : const AssetImage('assets/default_avatar.png') as ImageProvider,
+            ),
+            title: Text(user.displayName),
+            subtitle: Text('Lu le ${_formatDateTime(user.readAt)}'),
+          );
+        },
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Message aperçu
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Message',
-                  style: TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.messageContent,
-                  style: const TextStyle(fontSize: 13),
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Tabs
-          TabBar(
-            controller: _tabController,
-            labelColor: const Color(0xFFD4AF37),
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: const Color(0xFFD4AF37),
-            tabs: [
-              Tab(text: 'Livré (${delivered.length})'),
-              Tab(text: 'Lu (${read.length})'),
-            ],
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // Content
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : TabBarView(
-                    controller: _tabController,
-                    children: [
-                      ReadByList(users: delivered, type: 'delivered'),
-                      ReadByList(users: read, type: 'read'),
-                    ],
-                  ),
-          ),
-        ],
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          '${readers.length} sur $totalParticipants ont lu ce message',
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
+        ),
       ),
     );
   }
+
+  String _formatDateTime(DateTime dt) {
+    return '${dt.day}/${dt.month}/${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+class ReadReceiptUser {
+  final String id;
+  final String displayName;
+  final String? avatarUrl;
+  final DateTime readAt;
+
+  ReadReceiptUser({
+    required this.id,
+    required this.displayName,
+    this.avatarUrl,
+    required this.readAt,
+  });
 }

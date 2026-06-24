@@ -1,138 +1,100 @@
 // lib/presentation/chat/read_receipts/message_info_page.dart
+// Page d'information détaillée pour un message (statut, accusés, réactions)
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-
-import '../../../providers/read_receipt_provider.dart';
 import 'read_receipts_view.dart';
+import 'delivery_status.dart';
 
-class MessageInfoPage extends StatefulWidget {
+class MessageInfoPage extends StatelessWidget {
   final String messageId;
-  final String messageContent;
+  final String content;
   final DateTime sentAt;
-  final bool isPriority;
+  final DeliveryStatus status;
+  final List<ReadReceiptUser> readBy;
+  final Map<String, int> reactions;
+  final bool isEdited;
 
   const MessageInfoPage({
-    super.key,
+    Key? key,
     required this.messageId,
-    required this.messageContent,
+    required this.content,
     required this.sentAt,
-    this.isPriority = false,
-  });
+    required this.status,
+    required this.readBy,
+    required this.reactions,
+    this.isEdited = false,
+  }) : super(key: key);
 
-  @override
-  State<MessageInfoPage> createState() => _MessageInfoPageState();
-}
-
-class _MessageInfoPageState extends State<MessageInfoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, size: 20, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Info message',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-      ),
+      appBar: AppBar(title: const Text('Informations du message')),
       body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          // Message
-          Container(
-            margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Message',
-                  style: TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  widget.messageContent,
-                  style: const TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Icons.access_time, size: 12, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(
-                      DateFormat('dd/MM/yyyy à HH:mm').format(widget.sentAt),
-                      style: const TextStyle(fontSize: 10, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ],
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Message', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text(content),
+                  const SizedBox(height: 8),
+                  Text('Envoyé le : ${_formatDateTime(sentAt)}', style: const TextStyle(fontSize: 12)),
+                  if (isEdited)
+                    const Text('(Modifié)', style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
+                ],
+              ),
             ),
           ),
-          
-          // Statut prioritaire
-          if (widget.isPriority)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.priority_high, size: 16, color: Colors.red),
-                  const SizedBox(width: 12),
-                  Expanded(
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.done_all),
+              title: const Text('Statut de livraison'),
+              subtitle: Text(_statusString(status)),
+              trailing: DeliveryStatusIcon(status: status, size: 20),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.visibility),
+                  title: const Text('Accusés de lecture'),
+                  subtitle: Text('${readBy.length} personne(s) ont lu'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ReadReceiptsView(
+                          readers: readBy,
+                          totalParticipants: readBy.length, // À remplacer par le vrai total
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                if (reactions.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Message prioritaire',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Accusé de lecture forcé • Notification spéciale',
-                          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                        const Text('Réactions', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          children: reactions.entries.map((e) => Chip(
+                            label: Text('${e.key} ${e.value}'),
+                          )).toList(),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          
-          // Lectures
-          Container(
-            margin: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.done_all, size: 20, color: Colors.green),
-                  title: const Text('Lu par', style: TextStyle(fontSize: 13)),
-                  trailing: const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-                  onTap: () => _showReadReceipts(),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.done, size: 20, color: Colors.orange),
-                  title: const Text('Livré à', style: TextStyle(fontSize: 13)),
-                  trailing: const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-                  onTap: () => _showReadReceipts(),
-                ),
               ],
             ),
           ),
@@ -141,20 +103,22 @@ class _MessageInfoPageState extends State<MessageInfoPage> {
     );
   }
 
-  void _showReadReceipts() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.9,
-        minChildSize: 0.5,
-        builder: (_, __) => ReadReceiptsView(
-          messageId: widget.messageId,
-          messageContent: widget.messageContent,
-        ),
-      ),
-    );
+  String _formatDateTime(DateTime dt) {
+    return '${dt.day}/${dt.month}/${dt.year} à ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _statusString(DeliveryStatus status) {
+    switch (status) {
+      case DeliveryStatus.sending:
+        return 'Envoi en cours...';
+      case DeliveryStatus.sent:
+        return 'Envoyé (serveur)';
+      case DeliveryStatus.delivered:
+        return 'Distribué (appareil)';
+      case DeliveryStatus.read:
+        return 'Lu';
+      case DeliveryStatus.failed:
+        return 'Échec d\'envoi';
+    }
   }
 }

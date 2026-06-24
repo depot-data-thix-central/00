@@ -1,104 +1,57 @@
 // lib/presentation/chat/group_admin/pinned_by_admin_widget.dart
+// Widget affichant un message épinglé par un administrateur (avec mise en avant)
+
 import 'package:flutter/material.dart';
 
 class PinnedByAdminWidget extends StatelessWidget {
-  final String message;
   final String adminName;
+  final String content;
   final DateTime pinnedAt;
   final VoidCallback onTap;
-  final VoidCallback onUnpin;
 
   const PinnedByAdminWidget({
-    super.key,
-    required this.message,
+    Key? key,
     required this.adminName,
+    required this.content,
     required this.pinnedAt,
     required this.onTap,
-    required this.onUnpin,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFD4AF37).withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: const Border(
-            left: BorderSide(color: Color(0xFFD4AF37), width: 3),
-          ),
+          color: Colors.blue.shade50,
+          border: Border(bottom: BorderSide(color: Colors.blue.shade200)),
         ),
         child: Row(
           children: [
-            const Icon(Icons.push_pin, size: 14, color: Color(0xFFD4AF37)),
+            const Icon(Icons.push_pin, size: 16, color: Colors.blue),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const Text(
-                        'Épinglé par l\'admin',
-                        style: TextStyle(fontSize: 9, color: Color(0xFFD4AF37)),
-                      ),
-                      const SizedBox(width: 4),
-                      Container(
-                        width: 3,
-                        height: 3,
-                        decoration: const BoxDecoration(
-                          color: Colors.grey,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        adminName,
-                        style: const TextStyle(fontSize: 9, color: Colors.grey),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _formatDate(pinnedAt),
-                        style: const TextStyle(fontSize: 8, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
                   Text(
-                    message,
-                    style: const TextStyle(fontSize: 11),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    'Épinglé par $adminName',
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue),
                   ),
+                  const SizedBox(height: 2),
+                  Text(content, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
                 ],
               ),
             ),
-            GestureDetector(
-              onTap: onUnpin,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.close, size: 12, color: Colors.grey),
-              ),
-            ),
+            Text(_formatTime(pinnedAt), style: const TextStyle(fontSize: 10, color: Colors.grey)),
           ],
         ),
       ),
     );
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-    if (diff.inDays >= 1) return 'il y a ${diff.inDays}j';
-    if (diff.inHours >= 1) return 'il y a ${diff.inHours}h';
-    if (diff.inMinutes >= 1) return 'il y a ${diff.inMinutes}min';
-    return 'maintenant';
+  String _formatTime(DateTime time) {
+    return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
   }
 }
