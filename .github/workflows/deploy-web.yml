@@ -3,30 +3,80 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
+    environment: production
     
     steps:
-    - uses: actions/checkout@v4
-    
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
         channel: 'stable'
-    
-    - name: Enable web
+        cache: true
+
+    - name: Verify Flutter installation
+      run: |
+        flutter --version
+        dart --version
+
+    - name: Enable web platform
       run: flutter config --enable-web
-    
+
+    - name: Clean Flutter cache
+      run: |
+        flutter clean
+        flutter pub cache repair
+
     - name: Get dependencies
-      run: flutter pub get
-    
-    - name: Build web
-      run: flutter build web --release --base-href=/Thix_id/
-    
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
+      run: flutter pub get --verbose
+
+    - name: Build Flutter Web
+      run: flutter build web --release --base-href=/00/ --dart-define=FLUTTER_WEB_CANVASKIT_URL=https://www.gstatic.com/fonts/
+      timeout-minutes: 30
+
+    - name: Verify build output
+      run: |
+        if [ ! -d "build/web" ]; then
+          echo "❌ Build failed: build/web directory not found"
+          exit 1
+        fi
+        ls -la build/web/ | head -20
+        du -sh build/web/
+
+    - name: Upload artifact to GitHub Pages
+      uses: actions/upload-pages-artifact@v3
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./build/web
+        path: 'build/web'
+        retention-days: 30
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+      with:
+        timeout: 600000
